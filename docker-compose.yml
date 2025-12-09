@@ -1,0 +1,85 @@
+services:
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:14.18
+    env_file:
+      - .env
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      lakehouse:
+        aliases:
+          - db
+  
+  airflow:
+    container_name: airflow
+    image: apache/airflow:3.0.0
+    ports:
+      - 8080:8080
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: False
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_USER}:${AIRFLOW_PASSWORD}@postgres:5432/${AIRFLOW_DB}
+      PYTHONPATH: /opt/airflow/src
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs # airflow system logs
+      - ./src:/opt/airflow/src
+      - /var/run/docker.sock:/var/run/docker.sock # this is to establish connection with our sock to docker sock
+                                                  # this is done to allow Airflow to communicate with the Docker daemon and communicate with other containers
+    group_add: 
+      - '1001' # checked using stat -c '%g' /var/run/docker.sock
+    # this is done to provide permission to access and run the docker.sock, 
+    # it is for running docker commands to run DBT jobs/tasks in airflow container
+    command: >
+      bash -c "airflow db migrate && airflow standalone"
+    # this is to migrate the necessary Airflow metadata database schema && spins up a local webserver, scheduler, and runs initialization for development
+    depends_on:
+      - postgres
+    networks:
+      - lakehouse
+
+  glue:
+    container_name: glue_jupyter
+    command: /home/glue_user/jupyter/jupyter_start.sh
+    environment:
+      - DISABLE_SSL=true
+      - AWS_PROFILE=glue_dev
+      - DATALAKE_FORMATS=iceberg
+    image: amazon/aws-glue-libs:glue_libs_4.0.0_image_01
+    ports:
+      # Spark web UI
+      - '4040:4040' 
+      - '4041:4041'
+      # Spark History server
+      - '28080:18080'
+      - '28081:18081'
+      # Jupyter web server
+      - '8998:8998'
+      - '8888:8888'
+    restart: always
+    volumes:
+      - ~/.aws:/home/glue_user/.aws:ro
+      # you can run `sudo chown -R 10000:10000 ./glue/workspace` 
+      # to allow glue user to have write access to workspace
+      - ./glue/notebooks/:/home/glue_user/workspace/jupyter_workspace/
+    networks:
+      - lakehouse
+
+networks:
+  lakehouse:
+    driver: bridge
+
+volumes:
+  postgres:
