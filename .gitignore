@@ -215,3 +215,4 @@ service_logs/
 medium.md
 api_datasets/
 dbt/profiles.yml
+lambda/layer/python/site-packages/*

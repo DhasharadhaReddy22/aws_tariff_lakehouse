@@ -1,80 +1,134 @@
-import os
-import json
-import logging
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import List, Dict, Any
-from dotenv import load_dotenv
 
 from src.utils.api_client import APIClient
+from src.utils.bucket_client import bucket_client
+from src.utils.logger import get_logger
+from .ingestion_utils import *
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)s | %(name)s | %(asctime)s] - [%(filename)s | %(module)s | %(funcName)s | L%(lineno)d] : %(message)s"
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__, caller_file_path=__file__)
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(BASE_DIR / ".env")
+SOURCE_NAME = "imf"
+DOMAIN = "macroeconomics"
+DATASET = "indicators"
+IMF_BASE_URL = "https://www.imf.org"
 
 imf_client = APIClient(
-    base_url="https://www.imf.org",
+    base_url=IMF_BASE_URL,
     timeout=30,
     max_retries=3
 )
 
-
-def get_imf_indicators_label_list(indicators_list: List[str] = []) -> Dict[str, str]:
-    """Fetch IMF indicator labels (symbols -> human-readable labels)."""
-    all_indicators = imf_client.get("/external/datamapper/api/v1/indicators")
-    indicators_symbols = all_indicators.get("indicators").keys()
-    indicators_labels = {}
-    for symbol in indicators_symbols:
-        if not indicators_list or symbol in indicators_list:
-            indicators_labels[symbol] = all_indicators["indicators"][symbol]["label"]
-    return indicators_labels
-
-
-def fetch_imf_indicators_raw(indicator_codes: List[str], params: Dict[str, Any] = {}) -> List[Dict[str, Any]]:
+def fetch_imf_indicators_raw(
+    indicator_codes: List[str],
+    params: Dict[str, Any],
+    ingested_at: str
+) -> List[Dict[str, Any]]:
     """
-    Fetch IMF indicators and return flattened records.
-    Each record contains both the API response value and metadata.
+    Fetch IMF indicators and return flattened raw records.
     """
+
     if not indicator_codes:
+        logger.warning("No indicator codes provided")
         return []
 
-    fetched_time = datetime.now(timezone.utc).isoformat()
-    years_url = ",".join(map(str, params.get("years")))
-    countries_url = "/".join(params.get("countries"))
-    indicators_url = "/".join(indicator_codes)
-    url = f"/external/datamapper/api/v1/{indicators_url}/{countries_url}?periods={years_url}"
-    data, sanitized_url = imf_client.get(url)
+    years = params.get("years")
+    countries = params.get("countries")
 
-    # Flatten IMF API response into long-format records
-    data_records = []
-    values = data.get("values", {})
+    if not years or not countries:
+        raise ValueError("Both 'years' and 'countries' must be provided")
+
+    indicators_url = "/".join(indicator_codes)
+    countries_url = "/".join(countries)
+    years_url = ",".join(map(str, years))
+
+    endpoint = (
+        f"/external/datamapper/api/v1/"
+        f"{indicators_url}/{countries_url}"
+        f"?periods={years_url}"
+    )
+    
+    logger.info(f"Fetching IMF indicators from endpoint: {endpoint}")
+    resp = imf_client.get(endpoint)
+    logger.info("API Response received from IMF")
+
+    if not resp["ok"]:
+        logger.error(f"IMF API call failed: {resp['error']}")
+        raise RuntimeError("IMF ingestion failed")
+
+    values = resp["data"].get("values", {})
+
+    records: List[Dict[str, Dict[str, Dict[str, int]]]] = []
+
     for indicator, country_data in values.items():
         for country, year_data in country_data.items():
             for year, value in year_data.items():
-                data_records.append({
+                records.append({
+                    # Business fields
                     "indicator": indicator,
                     "country": country,
                     "year": int(year),
                     "value": value,
-                    "_source": "International Monetary Fund",
-                    "_ingestion_time": fetched_time,
-                    "_request_url": sanitized_url
+
+                    # Ingestion metadata
+                    "source": SOURCE_NAME,
+                    "dataset": DATASET,
+                    "ingested_at": ingested_at,
+
+                    # Transport metadata (from api_client)
+                    "received_at": resp["received_at"],
+                    "request_url": resp["url"],
                 })
 
-    logger.info(f"Fetched {len(data_records)} records.")
-    return data_records
+    logger.info(f"Fetched {len(records)} IMF records for indicators={indicator_codes}, countries={countries}")
+    return records
 
+def write_imf_raw_to_s3(records: List[Dict[str, Any]], ingested_at: str) -> None:
+    """
+    Write IMF raw records to S3 using ingestion-date partitioning.
+    """
+
+    if not records:
+        logger.warning("No records to write to S3")
+        return
+
+    key = build_raw_key(
+        domain=DOMAIN,
+        source=SOURCE_NAME,
+        dataset=DATASET,
+        ingestion_date=ingested_at[:10],  # YYYY-MM-DD
+        filename=create_filename("imf_indicators", ingested_at, ".jsonl")
+    )
+
+    bucket_client.put_jsonl(key, records)
+    logger.info(f"Wrote IMF raw data to s3://{bucket_client.bucket_name}/{key}")
+
+def run_imf_ingestion(
+    indicator_codes: List[str],
+    params: Dict[str, Any],
+) -> None:
+    """
+    Orchestrates a single IMF ingestion run.
+    """
+
+    ingested_at = datetime.now(timezone.utc).isoformat()
+
+    records = fetch_imf_indicators_raw(
+        indicator_codes=indicator_codes,
+        params=params,
+        ingested_at=ingested_at,
+    )
+
+    write_imf_raw_to_s3(
+        records=records,
+        ingested_at=ingested_at,
+    )
 
 if __name__ == "__main__":
     params = {
-        "years": [2022, 2023, 2024],
+        "years": [2021],
         "countries": ["IND", "USA"]
     }
 
-    result = fetch_imf_indicators_raw(["NGDP_RPCH", "NGDPD"], params=params)
+    result = run_imf_ingestion(["NGDP_RPCH", "NGDPD"], params=params)
     print(result)

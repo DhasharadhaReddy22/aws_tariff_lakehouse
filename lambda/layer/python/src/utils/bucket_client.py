@@ -19,8 +19,12 @@ class BucketClient:
             bucket_name (str): Target S3 bucket
             region_name (str, optional): AWS region (optional; boto3 default chain applies)
         """
-        self.bucket_name = bucket_name
+        self._bucket_name = bucket_name
         self.s3 = boto3.client("s3", region_name=region_name)
+
+    @property
+    def bucket_name(self) -> str:
+        return self._bucket_name
 
     def exists(self, key: str) -> bool:
         """
@@ -199,6 +203,11 @@ class BucketClient:
         except Exception as e:
             logger.error(f"Failed to download s3://{self.bucket_name}/{key} | {e}")
             raise
+
+bucket_client = BucketClient(
+    bucket_name=config.get("AWS_S3_LAKEHOUSE_BUCKET"),
+    region_name=config.get("AWS_REGION_NAME", default="us-east-1")
+)
 
 if __name__ == "__main__":
     # Example usage
