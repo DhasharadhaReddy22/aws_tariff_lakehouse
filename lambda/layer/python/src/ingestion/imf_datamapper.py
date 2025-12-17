@@ -21,8 +21,7 @@ imf_client = APIClient(
 
 def fetch_imf_indicators_raw(
     indicator_codes: List[str],
-    params: Dict[str, Any],
-    ingested_at: str
+    params: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     """
     Fetch IMF indicators and return flattened raw records.
@@ -73,17 +72,16 @@ def fetch_imf_indicators_raw(
                     # Ingestion metadata
                     "source": SOURCE_NAME,
                     "dataset": DATASET,
-                    "ingested_at": ingested_at,
 
                     # Transport metadata (from api_client)
-                    "received_at": resp["received_at"],
                     "request_url": resp["url"],
+                    "received_at": resp["received_at"],
                 })
 
     logger.info(f"Fetched {len(records)} IMF records for indicators={indicator_codes}, countries={countries}")
     return records
 
-def write_imf_raw_to_s3(records: List[Dict[str, Any]], ingested_at: str) -> None:
+def write_imf_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     """
     Write IMF raw records to S3 using ingestion-date partitioning.
     """
@@ -91,6 +89,10 @@ def write_imf_raw_to_s3(records: List[Dict[str, Any]], ingested_at: str) -> None
     if not records:
         logger.warning("No records to write to S3")
         return
+
+    ingested_at = datetime.now(timezone.utc).isoformat()
+    for record in records:
+        record["ingested_at"] = ingested_at
 
     key = build_raw_key(
         domain=DOMAIN,
@@ -100,29 +102,16 @@ def write_imf_raw_to_s3(records: List[Dict[str, Any]], ingested_at: str) -> None
         filename=create_filename("imf_indicators", ingested_at, ".jsonl")
     )
 
+    logger.info(f"Writing IMF raw data to s3://{bucket_client.bucket_name}/{key}")
     bucket_client.put_jsonl(key, records)
     logger.info(f"Wrote IMF raw data to s3://{bucket_client.bucket_name}/{key}")
 
-def run_imf_ingestion(
-    indicator_codes: List[str],
-    params: Dict[str, Any],
-) -> None:
+def run_imf_ingestion(indicator_codes: List[str], params: Dict[str, Any]) -> None:
     """
     Orchestrates a single IMF ingestion run.
     """
-
-    ingested_at = datetime.now(timezone.utc).isoformat()
-
-    records = fetch_imf_indicators_raw(
-        indicator_codes=indicator_codes,
-        params=params,
-        ingested_at=ingested_at,
-    )
-
-    write_imf_raw_to_s3(
-        records=records,
-        ingested_at=ingested_at,
-    )
+    records = fetch_imf_indicators_raw(indicator_codes=indicator_codes, params=params)
+    write_imf_raw_to_s3(records=records)
 
 if __name__ == "__main__":
     params = {

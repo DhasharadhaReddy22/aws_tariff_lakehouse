@@ -1,86 +1,130 @@
-from typing import List, Dict, Any
-import os
-from requests.structures import CaseInsensitiveDict
 from datetime import datetime, timezone
-from dotenv import load_dotenv
-from pathlib import Path
-import logging
+from typing import Dict, Any, List
+
+from requests.structures import CaseInsensitiveDict
 
 from src.utils.api_client import APIClient
+from src.utils.bucket_client import bucket_client
+from src.utils.config import config
+from src.utils.logger import get_logger
+from .ingestion_utils import build_raw_key, create_filename
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(BASE_DIR / ".env")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)s | %(name)s | %(asctime)s] "
-           "- [%(filename)s | %(module)s | %(funcName)s | L%(lineno)d] : %(message)s"
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__, caller_file_path=__file__)
+
+DOMAIN = "commodities"
+SOURCE_NAME = "metals_dev"
+DATASET = "spot_prices"
+BASE_URL = "https://api.metals.dev"
+API_KEY = config.get("METALS_DEV_API_KEY")
 
 headers = CaseInsensitiveDict()
 headers["Accept"] = "application/json"
 
-metals_dev_client = APIClient(
-    base_url="https://api.metals.dev",
+metals_client = APIClient(
+    base_url=BASE_URL,
     headers=headers,
     timeout=30,
-    max_retries=3
+    max_retries=3,
+    backoff_base=2,
+    backoff_cap=10,
 )
 
-def fetch_metals_latest(params: Dict[str, Any] = {}) -> List[Dict[str, Any]]:
+def fetch_metals_latest_raw(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
-    Fetch latest spot prices for metals and currencies from Metals API,
-    flatten into list of JSON records with metadata.
-
-    Args:
-        params (Dict[str, Any]): Additional query params
-
-    Returns:
-        List[Dict[str, Any]]: Flattened list of JSON records
+    Fetch latest spot prices from Metals.dev and return flattened raw records.
     """
-    api_key = os.getenv("METALS_DEV_API_KEY")
-    if not api_key:
-        logger.error("METALS_DEV_API_KEY is not set!")
-        return []
 
-    request_params = params.copy()
-    request_params["api_key"] = api_key
-    fetched_time = datetime.now(timezone.utc).isoformat()
+    if not API_KEY:
+        raise RuntimeError("METALS_DEV_API_KEY is not configured")
 
-    logger.info("Fetching RAW data from Metals.dev")
-
-    raw_response, sanitized_url = metals_dev_client.get("/v1/latest", params=request_params)
-    if not raw_response or raw_response.get("status") != "success":
-        logger.warning("No data returned for metals API, skipping.")
-        return []
-
-    all_records: List[Dict[str, Any]] = []
-
-    currency = raw_response.get("currency")
-    unit = raw_response.get("unit")
-    ts_metal = raw_response.get("timestamps", {}).get("metal")
-
-    # ---- Metals ----
-    for metal, rate in raw_response.get("metals", {}).items():
-        all_records.append({
-            "currency": currency,
-            "unit": unit,
-            "metal": metal,
-            "rate": float(rate),
-            "_fetched_at": fetched_time,
-            "_source": __name__,
-            "_sanitized_url": sanitized_url
-        })
-
-    logger.info(f"Fetched {len(all_records)} records from Metals.dev")
-    return all_records
-
-if __name__ == "__main__":  
-    params = {
-        "currency": "USD",
-        "unit": "g"
+    request_params = {
+        **params,
+        "api_key": API_KEY,
     }
 
-    data = fetch_metals_latest(params=params)
-    print(data)
+    logger.info("Fetching Metals.dev latest spot prices")
+
+    resp = metals_client.get("/v1/latest", params=request_params)
+
+    if not resp["ok"]:
+        raise RuntimeError(f"Metals.dev API failed: {resp['error']}")
+
+    payload = resp["data"]
+
+    if payload.get("status") != "success":
+        raise RuntimeError(
+            f"Metals.dev API returned error status: {payload.get('status')}"
+        )
+
+    currency = payload.get("currency")
+    unit = payload.get("unit")
+    metals = payload.get("metals", {})
+    metal_timestamp = payload.get("timestamps", {}).get("metal")
+
+    records: List[Dict[str, Any]] = []
+
+    for metal, rate in metals.items():
+        records.append({
+            # Business data
+            "metal": metal,
+            "rate": float(rate),
+            "currency": currency,
+            "unit": unit,
+            "market_time": metal_timestamp,  # already UTC from API
+
+            # Ingestion metadata
+            "source": SOURCE_NAME,
+            "dataset": DATASET,
+
+            # Transport metadata
+            "request_url": resp["url"],
+            "received_at": resp["received_at"],
+        })
+
+    logger.info(f"Fetched {len(records)} metal spot price records")
+    return records
+
+
+def write_metals_raw_to_s3(records: List[Dict[str, Any]]) -> None:
+    """
+    Write Metals.dev raw records to S3 using ingestion-date partitioning.
+    """
+
+    if not records:
+        logger.warning("No Metals.dev records to write")
+        return
+    
+    ingested_at = datetime.now(timezone.utc).isoformat()
+    for record in records:
+        record["ingested_at"] = ingested_at
+
+    key = build_raw_key(
+        domain=DOMAIN,
+        source=SOURCE_NAME,
+        dataset=DATASET,
+        ingestion_date=ingested_at[:10],  # YYYY-MM-DD
+        filename=create_filename("metals_spot_prices", ingested_at, ".jsonl"),
+    )
+
+    logger.info(f"Writing Metals.dev raw data to s3://{bucket_client.bucket_name}/{key}")
+    bucket_client.put_jsonl(key, records)
+    logger.info(f"Wrote Metals.dev raw data to s3://{bucket_client.bucket_name}/{key}")
+
+
+def run_metals_ingestion(params: Dict[str, Any]) -> None:
+    """
+    Orchestrates a single Metals.dev ingestion run.
+    """
+
+    records = fetch_metals_latest_raw(params=params)
+    write_metals_raw_to_s3(records=records)
+
+
+if __name__ == "__main__":
+    params = {
+        "currency": "USD",
+        "unit": "toz",
+    }
+
+    run_metals_ingestion(params)

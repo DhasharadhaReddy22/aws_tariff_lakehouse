@@ -1,270 +1,256 @@
-from typing import List, Dict, Any, Generator
-import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from typing import List, Dict, Any
+from enum import Enum
 from dateutil.relativedelta import relativedelta
-from dotenv import load_dotenv
-from pathlib import Path
-import logging
 
 from src.utils.api_client import APIClient
+from src.utils.bucket_client import bucket_client
+from src.utils.config import config
+from src.utils.logger import get_logger
+from .ingestion_utils import build_raw_key, create_filename
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(BASE_DIR / ".env")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)s | %(name)s | %(asctime)s] "
-           "- [%(filename)s | %(module)s | %(funcName)s | L%(lineno)d] : %(message)s"
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__, caller_file_path=__file__)
+
+DOMAIN = "financial_markets"
+SOURCE_NAME = "financial_modeling_prep"
+DATASET = "market_risk_premium"
+BASE_URL = "https://financialmodelingprep.com"
+API_KEY = config.get("FMP_API_KEY")
 
 fmp_client = APIClient(
-    base_url="https://financialmodelingprep.com",
+    base_url=BASE_URL,
     timeout=30,
-    max_retries=3
+    max_retries=3,
+    backoff_base=2,
+    backoff_cap=10,
 )
 
-def fetch_market_risk_premium(countries: List[str] = None) -> List[Dict[str, Any]]:
-    """Fetch country-level risk premiums with ingestion metadata."""
-    api_key = os.getenv("FMP_API_KEY")
-    if not api_key:
-        logger.error("FMP_API_KEY is not set!")
-        return []
+class DatasetType(str, Enum):
+    MARKET_RISK_PREMIUM = "market_risk_premium"
 
-    fetched_time = datetime.now(timezone.utc).isoformat()
-    params = {"apikey": api_key}
+    SECTOR_SNAPSHOT = "sector_snapshot"
+    INDUSTRY_SNAPSHOT = "industry_snapshot"
 
-    raw_response, sanitized_url = fmp_client.get("/stable/market-risk-premium", params=params)
-    if not raw_response:
-        logger.warning("No data returned for market risk premium.")
-        return []
+    SECTOR_HISTORICAL = "sector_historical"
+    INDUSTRY_HISTORICAL = "industry_historical"
 
-    all_records = []
-    for record in raw_response:
-        if countries and record.get("country") not in countries:
+def validate_date_within_last_30_days(date_str: str) -> None:
+    """
+    Raises ValueError if date_str (YYYY-MM-DD) is older than 30 days.
+    """
+    try:
+        input_date = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        logger.error("date must be in YYYY-MM-DD format")
+        raise ValueError("date must be in YYYY-MM-DD format")
+
+    now = datetime.now(timezone.utc)
+    if input_date < now - timedelta(days=30):
+        logger.error(f"Provided date {date_str} is older than 30 days from today ({now.date()})")
+        raise ValueError("date must be within the last 30 days")
+
+def fetch_market_risk_premium_raw(countries: List[str] | None = None,) -> List[Dict[str, Any]]:
+    """
+        This metric represents the difference between the expected return of the stock market and the risk-free rate.
+        It is used to assess the additional return that investors require for taking on the higher risk associated.
+    """
+    if not API_KEY:
+        raise RuntimeError("FMP_API_KEY is not configured")
+
+    resp = fmp_client.get("/stable/market-risk-premium", params={"apikey": API_KEY})
+
+    if not resp["ok"]:
+        raise RuntimeError(f"FMP market risk premium failed: {resp['error']}")
+
+    records: List[Dict[str, Any]] = []
+
+    for row in resp["data"]:
+        if countries and row.get("country") not in countries:
+            # skipping countries not in the provided list
             continue
-        all_records.append({
-            "country": record.get("country"),
-            "continent": record.get("continent"),
-            "countryRiskPremium": float(record.get("countryRiskPremium", 0)),
-            "totalEquityRiskPremium": float(record.get("totalEquityRiskPremium", 0)),
-            "_fetched_at": fetched_time,
-            "_source": __name__,
-            "_sanitized_url": sanitized_url
+
+        records.append({
+            # Business data
+            "country": row.get("country"),
+            "continent": row.get("continent"),
+            "country_risk_premium": float(row.get("countryRiskPremium", 0)),
+            "total_equity_risk_premium": float(row.get("totalEquityRiskPremium", 0)),
+
+            # Metadata
+            "source": SOURCE_NAME,
+            "dataset": DatasetType.MARKET_RISK_PREMIUM.value,
+
+            # Transport metadata
+            "request_url": resp["url"],
+            "received_at": resp["received_at"],
         })
 
-    logger.info(f"Fetched {len(all_records)} risk premium records.")
-    return all_records
+    return records
 
+def fetch_performance_raw(
+    level: str,                 # "sector" | "industry"
+    mode: str,                  # "snapshot" | "historical"
+    entities: List[str],        # list of sectors or industries
+    params: Dict[str, Any],     # date or from/to params depending on mode, along with api_key
+) -> List[Dict[str, Any]]:
 
-def fetch_sector_perf_snapshot_us(sectors: List[str] = None, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-    """Fetch snapshot of sector performance in the US."""
-    if not params or "date" not in params:
-        logger.error("Date parameter is required and within a months range!")
+    if level not in ("sector", "industry"):
+        raise ValueError("level must be 'sector' or 'industry'")
+
+    if mode not in ("snapshot", "historical"):
+        raise ValueError("mode must be 'snapshot' or 'historical'")
+
+    if not API_KEY:
+        raise RuntimeError("FMP_API_KEY is not configured")
+
+    if not entities:
+        logger.warning(f"No {level}s provided")
         return []
 
-    today = datetime.now()
-    one_month_ago = today - relativedelta(months=1)
-    given_date = datetime.strptime(params["date"], "%Y-%m-%d")
-    if given_date.date() < one_month_ago.date():
-        logger.error(f"Date {given_date.date()} is older than one month from today.")
-        return []
+    if mode=="snapshot" and "date" in params:
+        validate_date_within_last_30_days(params["date"])
+        
+    params = {**params, "apikey": API_KEY}
+    records: List[Dict[str, Any]] = []
 
-    api_key = os.getenv("FMP_API_KEY")
-    if not api_key:
-        logger.error("FMP_API_KEY is not set!")
-        return []
+    # Dataset resolution via enum
+    if level == "sector" and mode == "snapshot":
+        dataset = DatasetType.SECTOR_SNAPSHOT
+    elif level == "sector" and mode == "historical":
+        dataset = DatasetType.SECTOR_HISTORICAL
+    elif level == "industry" and mode == "snapshot":
+        dataset = DatasetType.INDUSTRY_SNAPSHOT
+    else:
+        dataset = DatasetType.INDUSTRY_HISTORICAL
 
-    fetched_time = datetime.now(timezone.utc).isoformat()
-    sector_params = params.copy()
-    sector_params["apikey"] = api_key
+    # Snapshot
+    if mode == "snapshot":
+        endpoint = f"/stable/{level}-performance-snapshot"
 
-    raw_response, sanitized_url = fmp_client.get("/stable/sector-performance-snapshot", params=sector_params)
-    if not raw_response:
-        logger.warning("No data returned for sectors.")
-        return []
+        resp = fmp_client.get(endpoint, params=params)
 
-    all_records = []
-    for record in raw_response:
-        if sectors and record.get("sector") not in sectors:
-            continue
-        all_records.append({
-            "date": record.get("date"),
-            "sector": record.get("sector"),
-            "exchange": record.get("exchange"),
-            "averageChange": float(record.get("averageChange", 0)),
-            "_fetched_at": fetched_time,
-            "_source": __name__,
-            "_sanitized_url": sanitized_url
-        })
+        if not resp["ok"]:
+            raise RuntimeError(f"FMP {level} snapshot failed: {resp['error']}")
 
-    logger.info(f"Fetched {len(all_records)} sector snapshot records.")
-    return all_records
+        for row in resp["data"]:
+            if row.get(level) not in entities:
+                continue
 
-def fetch_industry_perf_snapshot_us(industries: List[str] = None, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-    """Fetch snapshot of industry performance in the US."""
-    if not params or "date" not in params:
-        logger.error("Date parameter is required!")
-        return []
+            records.append({
+                "date": row.get("date"),
+                level: row.get(level),
+                "exchange": row.get("exchange"),
+                "average_change": float(row.get("averageChange", 0)),
 
-    today = datetime.now()
-    one_month_ago = today - relativedelta(months=1)
-    given_date = datetime.strptime(params["date"], "%Y-%m-%d")
-    if given_date.date() < one_month_ago.date():
-        logger.error(f"Date {given_date.date()} is older than one month from today.")
-        return []
+                "source": SOURCE_NAME,
+                "dataset": dataset.value,
 
-    api_key = os.getenv("FMP_API_KEY")
-    if not api_key:
-        logger.error("FMP_API_KEY is not set!")
-        return []
-
-    fetched_time = datetime.now(timezone.utc).isoformat()
-    industry_params = params.copy()
-    industry_params["apikey"] = api_key
-
-    raw_response, sanitized_url = fmp_client.get("/stable/industry-performance-snapshot", params=industry_params)
-    if not raw_response:
-        logger.warning("No data returned for industries.")
-        return []
-
-    all_records = []
-    for record in raw_response:
-        if industries and record.get("industry") not in industries:
-            continue
-        all_records.append({
-            "date": record.get("date"),
-            "industry": record.get("industry"),
-            "exchange": record.get("exchange"),
-            "averageChange": float(record.get("averageChange", 0)),
-            "_fetched_at": fetched_time,
-            "_source": __name__,
-            "_sanitized_url": sanitized_url
-        })
-
-    logger.info(f"Fetched {len(all_records)} industry snapshot records.")
-    return all_records
-
-def fetch_historic_sector_perf_us(sectors: List[str] = None, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-    """Fetch historical sector performance in the US."""
-    if not params or "from" not in params or "to" not in params:
-        logger.error("Both 'from' and 'to' parameters are required!")
-        return []
-
-    api_key = os.getenv("FMP_API_KEY")
-    if not api_key:
-        logger.error("FMP_API_KEY is not set!")
-        return []
-
-    if sectors is None or len(sectors)==0:
-        logger.warning("No sector(s) were provided.")
-        return []
-
-    fetched_time = datetime.now(timezone.utc).isoformat()
-    hist_params = params.copy()
-    hist_params["apikey"] = api_key
-
-    all_records = []
-    for sector in sectors:
-        hist_params["sector"] = sector
-        raw_response, sanitized_url = fmp_client.get("/stable/historical-sector-performance", params=hist_params)
-        if not raw_response:
-            logger.warning(f"No data returned for {sector}.")
-            continue
-
-        for record in raw_response:
-            all_records.append({
-                "date": record.get("date"),
-                "sector": record.get("sector"),
-                "exchange": record.get("exchange"),
-                "averageChange": float(record.get("averageChange", 0)),
-                "_fetched_at": fetched_time,
-                "_source": __name__,
-                "_sanitized_url": sanitized_url
+                "request_url": resp["url"],
+                "received_at": resp["received_at"],
             })
 
-    logger.info(f"Fetched historical sector records of {sectors}.")
-    return all_records
+    # Historical
+    else:
+        endpoint = f"/stable/historical-{level}-performance"
 
-def fetch_historic_industry_perf_us(industries: List[str] = None, params: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-    """Fetch historical industry performance in the US."""
-    if not params or "from" not in params or "to" not in params:
-        logger.error("Both 'from' and 'to' parameters are required!")
-        return []
+        for entity in entities:
+            params[level] = entity
 
-    api_key = os.getenv("FMP_API_KEY")
-    if not api_key:
-        logger.error("FMP_API_KEY is not set!")
-        return []
-    
-    if industries is None or len(industries)==0:
-        logger.warning("No industry(s) were provided.")
-        return []
+            resp = fmp_client.get(endpoint, params=params)
 
-    fetched_time = datetime.now(timezone.utc).isoformat()
-    hist_params = params.copy()
-    hist_params["apikey"] = api_key
-    all_records = []
+            if not resp["ok"]:
+                raise RuntimeError(
+                    f"FMP historical {level} failed for {entity}: {resp['error']}"
+                )
 
-    for industry in industries:
-        hist_params["industry"] = industry
-        raw_response, sanitized_url = fmp_client.get("/stable/historical-industry-performance", params=hist_params)
-        if not raw_response:
-            logger.warning(f"No data returned for {industry}.")
-            return []
+            for row in resp["data"]:
+                records.append({
+                    "date": row.get("date"),
+                    level: row.get(level),
+                    "exchange": row.get("exchange"),
+                    "average_change": float(row.get("averageChange", 0)),
 
-        for record in raw_response:
-            all_records.append({
-                "date": record.get("date"),
-                "industry": record.get("industry"),
-                "exchange": record.get("exchange"),
-                "averageChange": float(record.get("averageChange", 0)),
-                "_fetched_at": fetched_time,
-                "_source": __name__,
-                "_sanitized_url": sanitized_url
-            })
+                    "source": SOURCE_NAME,
+                    "dataset": dataset.value,
 
-    logger.info(f"Fetched historical industry records of {industries}.")
-    return all_records
+                    "request_url": resp["url"],
+                    "received_at": resp["received_at"],
+                })
 
-if __name__=="__main__":
-    countries = ["United States", "India"]
+    return records
 
-    data = fetch_market_risk_premium(countries=countries)
-    print(data)
+def write_fmp_raw_to_s3(records: List[Dict[str, Any]], dataset: DatasetType) -> None:
 
-    sectors = ["Basic Materials", "Utilities", "Consumer Cyclical"]
-    params = {
-        "date": "2025-09-01"
-    }
+    if not records:
+        logger.warning("No FMP records to write")
+        return
 
-    data = fetch_sector_perf_snapshot_us(sectors=sectors, params=params)
-    print(data)
+    ingested_at = datetime.now(timezone.utc).isoformat()
 
-    industries = ["Consumer Electronics", "Auto - Parts", "Apparel - Retail", "Apparel - Footwear & Accessories"]
-    params = {
-        "date": "2025-09-01"
-    }
+    for record in records:
+        record["ingested_at"] = ingested_at
 
-    data = fetch_industry_perf_snapshot_us(industries=industries, params=params)
-    print(data)
+    key = build_raw_key(
+        domain=DOMAIN,
+        source=SOURCE_NAME,
+        dataset=dataset.value,
+        ingestion_date=ingested_at[:10],
+        filename=create_filename(dataset.value, ingested_at, ".jsonl"),
+    )
 
-    sectors = ["Energy", "Utilities", "Consumer Cyclical"]
-    params = {
-        "from": "2025-07-01",
-        "to": "2025-08-01",
-        "exchange": "NASDAQ"
-    }
+    logger.info(f"Writing FMP raw data to s3://{bucket_client.bucket_name}/{key}")
+    bucket_client.put_jsonl(key, records)
+    logger.info(f"Wrote FMP data to s3://{bucket_client.bucket_name}/{key}")
 
-    data = fetch_historic_sector_perf_us(sectors=sectors, params=params)
-    print(data)
+def run_fmp_ingestion(dataset: DatasetType, **kwargs) -> None:
 
-    industries = ["Consumer Electronics", "Auto - Parts", "Apparel - Retail", "Apparel - Footwear & Accessories"]
-    params = {
-        "from": "2025-07-01",
-        "to": "2025-08-01",
-        "exchange": "NASDAQ"
-    }
+    if dataset == DatasetType.MARKET_RISK_PREMIUM:
+        records = fetch_market_risk_premium_raw(**kwargs)
 
-    data = fetch_historic_industry_perf_us(industries=industries, params=params)
-    print(data)
+    elif dataset in (
+        DatasetType.SECTOR_SNAPSHOT,
+        DatasetType.SECTOR_HISTORICAL,
+    ):
+        records = fetch_performance_raw(
+            level="sector",
+            mode="snapshot" if dataset == DatasetType.SECTOR_SNAPSHOT else "historical",
+            **kwargs,
+        )
+
+    elif dataset in (
+        DatasetType.INDUSTRY_SNAPSHOT,
+        DatasetType.INDUSTRY_HISTORICAL,
+    ):
+        records = fetch_performance_raw(
+            level="industry",
+            mode="snapshot" if dataset == DatasetType.INDUSTRY_SNAPSHOT else "historical",
+            **kwargs,
+        )
+
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset}")
+
+    write_fmp_raw_to_s3(records, dataset)
+
+if __name__ == "__main__":
+    run_fmp_ingestion(
+        dataset=DatasetType.MARKET_RISK_PREMIUM,
+        countries=["United States", "India"],
+    )
+
+    run_fmp_ingestion(
+        dataset=DatasetType.SECTOR_SNAPSHOT,
+        entities=["Utilities", "Energy"],
+        params={"date": "2025-12-01"},
+    )
+
+    run_fmp_ingestion(
+        dataset=DatasetType.INDUSTRY_HISTORICAL,
+        entities=["Consumer Electronics"],
+        params={
+            "from": "2025-07-01",
+            "to": "2025-08-01",
+            "exchange": "NASDAQ",
+        },
+    )

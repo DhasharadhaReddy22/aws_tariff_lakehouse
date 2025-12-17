@@ -25,8 +25,7 @@ twelve_data_api = APIClient(
 
 def fetch_twelvedata_time_series_raw(
     symbols: List[str],
-    params: Dict[str, Any],
-    ingested_at: str,
+    params: Dict[str, Any]
 ) -> List[Dict[str, Any]]:
     """
     Fetch Twelve Data time-series data and return flattened raw records.
@@ -77,11 +76,10 @@ def fetch_twelvedata_time_series_raw(
                 # Ingestion metadata
                 "source": SOURCE_NAME,
                 "dataset": DATASET,
-                "ingested_at": ingested_at,
 
                 # Transport metadata
-                "received_at": resp["received_at"],
                 "request_url": resp["url"],
+                "received_at": resp["received_at"],
             })
 
         logger.info(f"Fetched {len(values)} records for symbol={symbol}")
@@ -90,10 +88,7 @@ def fetch_twelvedata_time_series_raw(
     return records
 
 
-def write_twelvedata_raw_to_s3(
-    records: List[Dict[str, Any]],
-    ingested_at: str,
-) -> None:
+def write_twelvedata_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     """
     Write Twelve Data raw records to S3 using ingestion-date partitioning.
     """
@@ -101,6 +96,10 @@ def write_twelvedata_raw_to_s3(
     if not records:
         logger.warning("No Twelve Data records to write")
         return
+
+    ingested_at = datetime.now(timezone.utc).isoformat()
+    for record in records:
+        record["ingested_at"] = ingested_at
 
     key = build_raw_key(
         domain=DOMAIN,
@@ -110,8 +109,8 @@ def write_twelvedata_raw_to_s3(
         filename=create_filename("twelvedata_timeseries", ingested_at, ".jsonl")
     )
 
+    logger.info(f"Writing Twelve Data raw data to s3://{bucket_client.bucket_name}/{key}")
     bucket_client.put_jsonl(key, records)
-
     logger.info(f"Wrote Twelve Data raw data to s3://{bucket_client.bucket_name}/{key}")
 
 def run_twelvedata_ingestion(
@@ -122,18 +121,8 @@ def run_twelvedata_ingestion(
     Orchestrates a single Twelve Data ingestion run.
     """
 
-    ingested_at = datetime.now(timezone.utc).isoformat()
-
-    records = fetch_twelvedata_time_series_raw(
-        symbols=symbols,
-        params=params,
-        ingested_at=ingested_at,
-    )
-
-    write_twelvedata_raw_to_s3(
-        records=records,
-        ingested_at=ingested_at,
-    )
+    records = fetch_twelvedata_time_series_raw(symbols=symbols, params=params)
+    write_twelvedata_raw_to_s3(records=records)
 
 if __name__ == "__main__":
     symbols = ["XAU/USD", "USD/INR"]
