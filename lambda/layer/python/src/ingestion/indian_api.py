@@ -1,185 +1,169 @@
-from typing import List, Dict, Any, Generator
-import os
-import json
 from datetime import datetime, timezone
-from dateutil.relativedelta import relativedelta
-from dotenv import load_dotenv
-from pathlib import Path
+from enum import Enum
+from typing import List, Dict, Any
 
 from src.utils.api_client import APIClient
+from src.utils.bucket_client import bucket_client
+from src.utils.config import config
+from src.utils.logger import get_logger
+from .ingestion_utils import build_raw_key, create_filename
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(BASE_DIR / ".env")
+logger = get_logger(__name__, caller_file_path=__file__)
+
+DOMAIN = "energy"
+SOURCE_NAME = "indian_api"
+FUEL_BASE_URL = "https://fuel.indianapi.in"
+STOCKS_BASE_URL = "https://stock.indianapi.in"
+FUEL_API_KEY = config.get("INDIAN_FUEL_API")
+if not FUEL_API_KEY:
+    raise RuntimeError("INDIAN_FUEL_API is not configured")
 
 headers = {
-        "X-Api-Key": os.getenv("INDIAN_STOCK_API")
-    }
+    "X-Api-Key": FUEL_API_KEY
+}
 
-indian_api_client = APIClient(
-    base_url="https://fuel.indianapi.in",
+indian_fuel_client = APIClient(
+    base_url=FUEL_BASE_URL,
+    headers=headers,
     timeout=30,
     max_retries=3,
-    headers=headers
+    backoff_base=2,
+    backoff_cap=10
 )
 
-def convert_to_jsonl(data: List[Dict[str, Any]]) -> str:
-    if not data or len(data) == 0:
-        return ""
-    jsonl_data = "\n".join([json.dumps(record) for record in data]) + "\n" # Convert each dictionary to a JSON string and join with newlines
-    return jsonl_data
+class DatasetType(str, Enum):
+    DIESEL_CITY_LIVE = "diesel_city_live"
+    DIESEL_STATE_LIVE = "diesel_state_live"
+    PETROL_CITY_LIVE = "petrol_city_live"
+    PETROL_STATE_LIVE = "petrol_state_live"
+    DIESEL_CITY_HISTORICAL = "diesel_city_historical"
+    DIESEL_STATE_HISTORICAL = "diesel_state_historical"
+    PETROL_CITY_HISTORICAL = "petrol_city_historical"
+    PETROL_STATE_HISTORICAL = "petrol_state_historical"
 
-def get_cities() -> List[Dict[str, str]]:
-    response = indian_api_client.get("/cities")
-    final = {}
-    for record in response:
-        final[record.get("name")] = record.get("value")
-    return final
-
-def get_states() -> List[Dict[str, str]]:
-    response = indian_api_client.get("/states")
-    final = {}
-    for record in response:
-        final[record.get("name")] = record.get("value")
-    return final
-
-def fetch_live_fuel_prices_india(
-    fuel_type: str = "petrol", 
-    location_type: str = "state"
+def fetch_fuel_prices_raw(
+    dataset: DatasetType,
+    location: str | None = None,
+    output_size: int | None = None,
 ) -> List[Dict[str, Any]]:
-    print(f"Extracting live {fuel_type} prices for {location_type}")
-    
-    params = {
-        "fuel_type": fuel_type,
-        "location_type": location_type
-    }
-    
-    raw_response = indian_api_client.get("/live_fuel_price", params=params)
-    
-    if not raw_response:
-        print(f"No data returned for {fuel_type}/{location_type}")
-        return []
-    
-    if isinstance(raw_response, list):
-        return raw_response
-    elif isinstance(raw_response, dict) and "data" in raw_response:
-        return raw_response["data"]
-    else:
-        return [raw_response]
-
-def upload_live_fuel_prices(
-    data_records: List[Dict[str, Any]],
-    fuel_type: str = "petrol",
-    location_type: str = "state",
-) -> str:
-    if not data_records:
-        print("No data records provided for upload")
-        return None
-    
-    execution_date = datetime.now(timezone.utc)
-    
-    print(f"Uploading {len(data_records)} {fuel_type} records for {location_type}")
-    
-    date_str = execution_date.strftime("%Y-%m-%d")
-    hour_str = execution_date.strftime("%H")
-    timestamp_str = execution_date.strftime("%Y%m%d_%H%M%S")
-
-    s3_key = f"bronze/source=indian_api/live_fuel/fuel_type={fuel_type}/ingestion_date={date_str}/hour_{hour_str}.jsonl"
-
-    jsonl_content = "\n".join([json.dumps(record) for record in data_records])
-    
-    success = s3_manager.upload_json_content(
-        json_content=jsonl_content,
-        bucket="raw-data",
-        key=s3_key
-    )
-    
-    if success:
-        print(f"Upload successful: s3://raw-data/{s3_key}")
-        return s3_key
-    else:
-        print("Upload failed")
-        return None
-
-def fetch_historic_fuel_prices_india(
-    fuel_type: str = "petrol",
-    location_type: str = "state", 
-    location: str = "Gujarat",
-    output_size: int = 3
-) -> List[Dict[str, Any]]:
-    print(f"Extracting historical {fuel_type} prices for {location_type}")
-
-    params = {
-        "fuel_type": fuel_type,
-        "location_type": location_type,
-        "location": location,
-        "n": output_size + 1
-    }
-
-    raw_response = indian_api_client.get("/historical_fuel_price", params=params)
-
-    if not raw_response:
-        print(f"No data returned for {fuel_type}/{location_type}")
-        return []
-    
-    if isinstance(raw_response, list):
-        return raw_response
-    elif isinstance(raw_response, dict) and "data" in raw_response:
-        return raw_response["data"]
-    else:
-        return [raw_response]
-
-def upload_historical_fuel_prices(
-    data_records: List[Dict[str, Any]],
-    fuel_type: str = "petrol",
-    location_type: str = "state",
-    execution_date: datetime = None
-) -> str:
     """
-    Task 2: Pure upload - takes data and uploads to MinIO
+    Fetch fuel prices based on DatasetType.
+    Dataset types are in the format: {fuel_type}_{location_type}_{mode}
+    where:
+      fuel_type: petrol | diesel
+      location_type: city | state
+      mode: live | historical
     """
-    if not data_records:
-        print("No data records provided for upload")
-        return None
-    
-    if execution_date is None:
-        execution_date = datetime.now(timezone.utc)
-    
-    print(f"Uploading {len(data_records)} {fuel_type} records for {location_type}")
-    
-    date_str = execution_date.strftime("%Y-%m-%d")
-    hour_str = execution_date.strftime("%H")
-    timestamp_str = execution_date.strftime("%Y%m%d_%H%M%S")
-    
-    s3_key = f"bronze/source=indian_api/historic_fuel/fuel_type={fuel_type}/location_type={location_type}/ingested_{timestamp_str}.jsonl"
-    
-    jsonl_content = "\n".join([json.dumps(record) for record in data_records])
-    
-    success = s3_manager.upload_json_content(
-        json_content=jsonl_content,
-        bucket="raw-data",
-        key=s3_key
-    )
-    
-    if success:
-        print(f"Upload successful: s3://raw-data/{s3_key}")
-        return s3_key
+
+    parts = dataset.value.split("_")
+    fuel_type = parts[0]          # petrol | diesel
+    location_type = parts[1]      # city | state
+    mode = parts[2]               # live | historical
+
+    if mode == "historical":
+        if not location:
+            raise ValueError("location is required for historical datasets")
+        if output_size is None:
+            raise ValueError("output_size is required for historical datasets")
+
+        endpoint = "/historical_fuel_price"
+        params = {
+            "fuel_type": fuel_type,
+            "location_type": location_type,
+            "location": location,
+            "n": output_size + 1,
+        }
     else:
-        print("Upload failed")
-        return None
+        endpoint = "/live_fuel_price"
+        params = {
+            "fuel_type": fuel_type,
+            "location_type": location_type,
+        }
+
+    logger.info(f"Fetching fuel prices | dataset={dataset.value}")
+    resp = indian_fuel_client.get(endpoint, params=params)
+
+    if not resp["ok"]:
+        raise RuntimeError(f"Indian fuel API failed: {resp['error']}")
+
+    data = resp["data"]
+    records: List[Dict[str, Any]] = []
+
+    for row in data:
+        record = {
+            # Common business fields
+            "fuel_type": fuel_type,
+            "location_type": location_type,
+            "price": row.get("price"),
+            "change": row.get("change"),
+
+            # Location identity
+            "location": row.get("city") or row.get("state") or row.get("name"),
+
+            # Ingestion metadata
+            "source": SOURCE_NAME,
+            "dataset": (
+                f"{dataset.value}_{location.lower()}"
+                if mode == "historical"
+                else dataset.value
+            ),
+
+            # Transport metadata
+            "request_url": resp["url"],
+            "received_at": resp["received_at"],
+        }
+
+        # Historical-only fields
+        if mode == "historical":
+            record["date"] = row.get("date")
+
+        records.append(record)
+
+    logger.info(f"Fetched {len(records)} records for dataset={dataset.value}")
+    return records
+
+def write_fuel_raw_to_s3(
+    records: List[Dict[str, Any]],
+    dataset: DatasetType,
+) -> None:
+    if not records:
+        logger.warning("No records to write")
+        return
+
+    ingested_at = datetime.now(timezone.utc).isoformat()
+    for r in records:
+        r["ingested_at"] = ingested_at
+
+    key = build_raw_key(
+        domain=DOMAIN,
+        source=SOURCE_NAME,
+        dataset=records[0]["dataset"],  # resolved dataset name
+        ingestion_date=ingested_at[:10],
+        filename=create_filename(records[0]["dataset"], ingested_at, ".jsonl"),
+    )
+
+    logger.info(f"Writing raw data to s3://{bucket_client.bucket_name}/{key}")
+    bucket_client.put_jsonl(key, records)
+    logger.info(f"Wrote {len(records)} records to s3://{bucket_client.bucket_name}/{key}")
+
+def run_fuel_ingestion(
+    dataset: DatasetType,
+    location: str | None = None,
+    output_size: int | None = None,
+) -> None:
+    records = fetch_fuel_prices_raw(
+        dataset=dataset,
+        location=location,
+        output_size=output_size,
+    )
+    write_fuel_raw_to_s3(records, dataset)
+
 
 if __name__ == "__main__":
-    # cities = get_cities()
-    # print(cities)
+    run_fuel_ingestion(DatasetType.PETROL_STATE_LIVE)
 
-    # states = get_states()
-    # print(states)
-
-    # live_fuel_data = fetch_live_fuel_prices_india(fuel_type="petrol", location_type="city")
-    # print(live_fuel_data)
-
-    historic_fuel = fetch_historic_fuel_prices_india(
-        fuel_type="petrol",
-        location_type="state",
-        location="Gujarat",
-        output_size=3)
-    print(historic_fuel)
+    run_fuel_ingestion(
+        DatasetType.DIESEL_CITY_HISTORICAL,
+        location="Delhi",
+        output_size=7,
+    )

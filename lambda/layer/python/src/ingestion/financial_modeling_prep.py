@@ -14,7 +14,6 @@ logger = get_logger(__name__, caller_file_path=__file__)
 
 DOMAIN = "financial_markets"
 SOURCE_NAME = "financial_modeling_prep"
-DATASET = "market_risk_premium"
 BASE_URL = "https://financialmodelingprep.com"
 API_KEY = config.get("FMP_API_KEY")
 
