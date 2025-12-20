@@ -87,8 +87,8 @@ def write_imf_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     """
 
     if not records:
-        logger.warning("No records to write to S3")
-        return
+        logger.error("No IMF records to write to S3")
+        raise ValueError("No IMF records to write")
 
     ingested_at = datetime.now(timezone.utc).isoformat()
     for record in records:

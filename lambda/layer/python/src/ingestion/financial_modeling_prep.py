@@ -182,8 +182,8 @@ def fetch_performance_raw(
 def write_fmp_raw_to_s3(records: List[Dict[str, Any]], dataset: DatasetType) -> None:
 
     if not records:
-        logger.warning("No FMP records to write")
-        return
+        logger.error("No FMP records to write")
+        raise ValueError("No FMP records to write")
 
     ingested_at = datetime.now(timezone.utc).isoformat()
 

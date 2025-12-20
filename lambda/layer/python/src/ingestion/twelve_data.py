@@ -94,8 +94,8 @@ def write_twelvedata_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     """
 
     if not records:
-        logger.warning("No Twelve Data records to write")
-        return
+        logger.warning("No Twelve Data records to write to s3")
+        raise ValueError("No Twelve Data records to write")
 
     ingested_at = datetime.now(timezone.utc).isoformat()
     for record in records:

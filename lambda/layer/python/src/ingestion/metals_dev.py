@@ -92,8 +92,8 @@ def write_metals_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     """
 
     if not records:
-        logger.warning("No Metals.dev records to write")
-        return
+        logger.warning("No Metals.dev records to write to s3")
+        raise ValueError("No Metals.dev records to write")
     
     ingested_at = datetime.now(timezone.utc).isoformat()
     for record in records:

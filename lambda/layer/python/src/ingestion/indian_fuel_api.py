@@ -13,10 +13,9 @@ logger = get_logger(__name__, caller_file_path=__file__)
 DOMAIN = "energy"
 SOURCE_NAME = "indian_api"
 FUEL_BASE_URL = "https://fuel.indianapi.in"
-STOCKS_BASE_URL = "https://stock.indianapi.in"
-FUEL_API_KEY = config.get("INDIAN_FUEL_API")
+FUEL_API_KEY = config.get("INDIAN_FUEL_API_KEY")
 if not FUEL_API_KEY:
-    raise RuntimeError("INDIAN_FUEL_API is not configured")
+    raise RuntimeError("INDIAN_FUEL_API_KEY is not configured")
 
 headers = {
     "X-Api-Key": FUEL_API_KEY
@@ -31,7 +30,7 @@ indian_fuel_client = APIClient(
     backoff_cap=10
 )
 
-class DatasetType(str, Enum):
+class FuelDatasetType(str, Enum):
     DIESEL_CITY_LIVE = "diesel_city_live"
     DIESEL_STATE_LIVE = "diesel_state_live"
     PETROL_CITY_LIVE = "petrol_city_live"
@@ -42,13 +41,14 @@ class DatasetType(str, Enum):
     PETROL_STATE_HISTORICAL = "petrol_state_historical"
 
 def fetch_fuel_prices_raw(
-    dataset: DatasetType,
+    dataset: FuelDatasetType,
     location: str | None = None,
     output_size: int | None = None,
 ) -> List[Dict[str, Any]]:
     """
-    Fetch fuel prices based on DatasetType.
-    Dataset types are in the format: {fuel_type}_{location_type}_{mode}
+    Fetch fuel prices based on FuelDatasetType.
+    Dataset types are in the format (all caps): {fuel_type}_{location_type}_{mode}
+    example: DIESEL_CITY_LIVE
     where:
       fuel_type: petrol | diesel
       location_type: city | state
@@ -124,11 +124,11 @@ def fetch_fuel_prices_raw(
 
 def write_fuel_raw_to_s3(
     records: List[Dict[str, Any]],
-    dataset: DatasetType,
+    dataset: FuelDatasetType,
 ) -> None:
     if not records:
-        logger.warning("No records to write")
-        return
+        logger.warning("No Indian Fuel records to write to s3")
+        raise ValueError("No Indian Fuel records to write")
 
     ingested_at = datetime.now(timezone.utc).isoformat()
     for r in records:
@@ -147,7 +147,7 @@ def write_fuel_raw_to_s3(
     logger.info(f"Wrote {len(records)} records to s3://{bucket_client.bucket_name}/{key}")
 
 def run_fuel_ingestion(
-    dataset: DatasetType,
+    dataset: FuelDatasetType,
     location: str | None = None,
     output_size: int | None = None,
 ) -> None:
@@ -160,10 +160,10 @@ def run_fuel_ingestion(
 
 
 if __name__ == "__main__":
-    run_fuel_ingestion(DatasetType.PETROL_STATE_LIVE)
+    run_fuel_ingestion(FuelDatasetType.PETROL_STATE_LIVE)
 
     run_fuel_ingestion(
-        DatasetType.DIESEL_CITY_HISTORICAL,
+        FuelDatasetType.DIESEL_CITY_HISTORICAL,
         location="Delhi",
         output_size=7,
     )
