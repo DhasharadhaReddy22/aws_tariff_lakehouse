@@ -216,3 +216,5 @@ medium.md
 api_datasets/
 dbt/profiles.yml
 lambda/layer/python/site-packages/*
+lambda/zips/*
+*/__pycache__/

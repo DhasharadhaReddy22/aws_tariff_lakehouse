@@ -10,9 +10,6 @@ from src.ingestion.ingestion_utils import build_raw_key, create_filename
 
 logger = get_logger(__name__, caller_file_path=__file__)
 
-MARKET_DOMAIN = "american_markets"
-NEWS_DOMAIN = "news"
-COMM_DOMAIN = "commodities"
 SOURCE_NAME = "alphavantage"
 BASE_URL = "https://www.alphavantage.co"
 API_KEY = config.get("ALPHA_VANTAGE_API_KEY")
@@ -154,7 +151,7 @@ def fetch_commodity_prices_raw(functions: List[str], interval: str = "daily") ->
     logger.info(f"Fetched total {len(records)} commodity records")
     return records
 
-def write_alphavantage_raw_to_s3(domain:DomainType, dataset: DatasetType,  records: List[Dict[str, Any]], entity_key_fn=None) -> None:
+def write_alphavantage_raw_to_s3(domain:DomainType, dataset: DatasetType,  records: List[Dict[str, Any]], entity_key_fn=None) -> Dict[str, Any]:
     """
     Generic raw writer for Alphavantage endpoints.
     Entity key function is passed in use cases where data needs to be fanned-out to unique files per entity.
@@ -168,6 +165,8 @@ def write_alphavantage_raw_to_s3(domain:DomainType, dataset: DatasetType,  recor
     for r in records:
         r["ingested_at"] = ingested_at
 
+    keys = []
+    total_records = 0
     if entity_key_fn is None: # No fanning out, write all records to a single file
         key = build_raw_key(
             domain=domain.value,
@@ -176,10 +175,12 @@ def write_alphavantage_raw_to_s3(domain:DomainType, dataset: DatasetType,  recor
             ingestion_date=ingested_at[:10],
             filename=create_filename(dataset.value, ingested_at, ".jsonl"),
         )
+        keys.append(key)
         logger.info(f"Writing Alphavantage {domain.value} raw data → s3://{bucket_client.bucket_name}/{key}")
         bucket_client.put_jsonl(key, records)
         logger.info(f"Wrote {len(records)} records to s3://{bucket_client.bucket_name}/{key}")
-        return
+        total_records += len(records)
+        return {"keys": keys, "record_count": total_records, "ingested_at": ingested_at}
 
     # Entity-aware fanout
     grouped = {}
@@ -197,33 +198,38 @@ def write_alphavantage_raw_to_s3(domain:DomainType, dataset: DatasetType,  recor
             ingestion_date=ingested_at[:10],
             filename=create_filename(f"{dataset.value}_{entity}", ingested_at, ".jsonl"),
         )
+        keys.append(key)
         logger.info(f"Writing Alphavantage {domain.value} raw data for entity '{entity}' → s3://{bucket_client.bucket_name}/{key}")
         bucket_client.put_jsonl(key, entity_records)
         logger.info(f"Wrote {len(entity_records)} records to s3://{bucket_client.bucket_name}/{key}")
+        total_records += len(entity_records)
+    return {"keys": keys, "record_count": total_records, "ingested_at": ingested_at}
 
-def run_daily_stock_prices_ingestion(symbols: List[str], outputsize: str = "compact") -> None:
+def run_daily_stock_prices_ingestion(symbols: List[str], outputsize: str = "compact") -> Dict[str, Any]:
     """
     Orchestrates a single daily stock prices ingestion run.
     """
     records = fetch_daily_stock_prices_raw(symbols=symbols, outputsize=outputsize)
-    write_alphavantage_raw_to_s3(
+    write_result = write_alphavantage_raw_to_s3(
         domain=DomainType.MARKET,
         dataset=DatasetType.TIME_SERIES_DAILY,
         records=records,
         entity_key_fn=lambda r: r["symbol"],
     )
+    return {"domain": DomainType.MARKET.value, "source": SOURCE_NAME, "dataset": DatasetType.TIME_SERIES_DAILY.value, **write_result}
 
-def run_commodity_prices_ingestion(functions: List[str], interval: str = "daily") -> None:
+def run_commodity_prices_ingestion(functions: List[str], interval: str = "daily") -> Dict[str, Any]:
     """
     Orchestrates a single commodity prices ingestion run.
     """
     records = fetch_commodity_prices_raw(functions=functions, interval=interval)
-    write_alphavantage_raw_to_s3(
+    write_result = write_alphavantage_raw_to_s3(
         domain=DomainType.COMMODITIES,
         dataset=DatasetType.COMMODITY,
         records=records,
         entity_key_fn=lambda r: r["symbol"],
     )
+    return {"domain": DomainType.COMMODITIES.value, "source": SOURCE_NAME, "dataset": DatasetType.COMMODITY.value, **write_result}
 
 if __name__ == "__main__":
     
