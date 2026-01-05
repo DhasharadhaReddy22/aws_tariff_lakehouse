@@ -47,7 +47,8 @@ def get_logger(logger_name=__name__, caller_file_path=None):
         return logger
 
     formatter = logging.Formatter(
-        "[%(levelname)s | %(name)s | %(asctime)s] - [%(filename)s | %(module)s | %(funcName)s | L%(lineno)d] : %(message)s"
+        "[%(levelname)s | %(name)s | %(asctime)s.%(msecs)03dZ] - [%(filename)s | %(module)s | %(funcName)s | L%(lineno)d] : %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S"
     )
 
     if IS_LAMBDA:

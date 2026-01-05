@@ -11,6 +11,7 @@ logger = get_logger(__name__, caller_file_path=__file__)
 
 def _load_dotenv_if_dev():
     stage = os.getenv("STAGE", "dev")  # default stage
+    logger.info(f"Current STAGE: {stage}")
     if stage == "dev":
         try:
             PROJECT_DIR = Path(__file__).resolve().parents[5]
@@ -20,6 +21,8 @@ def _load_dotenv_if_dev():
         except Exception:
             logger.warning("Failed to load .env file")
             pass  # can extend this to other ways of loading env variables is needed
+    else:
+        logger.info("Non-dev stage detected; skipping .env loading")
     pass
 
 _load_dotenv_if_dev()
@@ -32,11 +35,10 @@ class Config:
     """
 
     def __init__(self):
-        self._stage = os.getenv("STAGE", "dev")
+        self._stage = os.getenv("STAGE", "dev") # default to dev for dev creds in ssm
 
         # Lazy: Only create SSM client when needed
         self._ssm_client = None
-
         logger.info(f"Config initialized for stage: {self._stage}")
 
     @property # this makes it read-only, you can't config.stage = "prod"
@@ -68,7 +70,7 @@ class Config:
 
         # If dev, and not found in .env, return default
         if self.stage == "dev":
-            logger.warning(f"Returned default for missing config '{env_key}' in .env file")
+            logger.warning(f"Returned set default for missing config '{env_key}' in .env file")
             return default
 
         # Production — read from SSM

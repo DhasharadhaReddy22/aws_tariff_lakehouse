@@ -21,7 +21,8 @@ class APIClient:
             timeout: int = 10, 
             max_retries: int = 3,
             backoff_base: float = 1.0,
-            backoff_cap: float = 8.0 
+            backoff_cap: float = 8.0,
+            request_interval: float = 1.0,
         ):
         self.base_url = base_url.rstrip('/')
         self.headers = headers or {}
@@ -29,6 +30,7 @@ class APIClient:
         self.max_retries = max_retries
         self.backoff_base = backoff_base
         self.backoff_cap = backoff_cap
+        self.request_interval = request_interval
 
     @staticmethod
     def sanitize_url(
@@ -123,7 +125,7 @@ class APIClient:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                logger.info(f"GET {url} (Attempt {attempt}/{self.max_retries})")
+                logger.info(f"GET {sanitized_url} (Attempt {attempt}/{self.max_retries})")
                 response = requests.get(url, headers=self.headers, params=params, timeout=self.timeout)
                 received_at = self.utc_now()
                 status_code = response.status_code
@@ -141,6 +143,7 @@ class APIClient:
                     # retries on API-level errors will not be attempted
                     # retries on this level of errors won't help
                     logger.error(f"API-level error detected | {error_msg}")
+                    time.sleep(self.request_interval)  # To allow for rate-limits
                     return {
                         "ok": False,
                         "status_code": status_code,
@@ -150,6 +153,7 @@ class APIClient:
                         "received_at": received_at
                     }
 
+                time.sleep(self.request_interval)  # To allow for rate-limits
                 return {
                     "ok": True,
                     "status_code": status_code,

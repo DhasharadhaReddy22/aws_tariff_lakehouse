@@ -12,9 +12,6 @@ logger = get_logger(__name__, caller_file_path=__file__)
 
 SOURCE_NAME = "alphavantage"
 BASE_URL = "https://www.alphavantage.co"
-API_KEY = config.get("ALPHA_VANTAGE_API_KEY")
-if not API_KEY:
-    raise RuntimeError("ALPHA_VANTAGE_API_KEY is not configured")
 
 alpha_client = APIClient(
     base_url=BASE_URL,
@@ -22,6 +19,7 @@ alpha_client = APIClient(
     max_retries=3,
     backoff_base=2,
     backoff_cap=10,
+    request_interval=1.1 # To allow for rate-limits
 )
 
 class DatasetType(str, Enum):
@@ -31,6 +29,12 @@ class DatasetType(str, Enum):
 class DomainType(str, Enum):
     MARKET = "american_markets"
     COMMODITIES = "commodities"
+
+def _get_api_key() -> str:
+    api_key = config.get("ALPHAVANTAGE_API_KEY")
+    if not api_key:
+        raise RuntimeError("ALPHAVANTAGE_API_KEY is not configured")
+    return api_key
 
 def _safe_float(value):
     try:
@@ -48,6 +52,7 @@ def fetch_daily_stock_prices_raw(symbols: List[str], outputsize: str = "compact"
         logger.error("No symbols provided for DAILY stock prices ingestion")
         raise ValueError("Symbols list is empty")
     
+    api_key = _get_api_key()
     records: List[Dict[str, Any]] = []
 
     for symbol in symbols:
@@ -56,7 +61,7 @@ def fetch_daily_stock_prices_raw(symbols: List[str], outputsize: str = "compact"
             "symbol": symbol,
             "outputsize": outputsize,
             "datatype": "json",
-            "apikey": API_KEY,
+            "apikey": api_key,
         }
 
         logger.info(f"Fetching DAILY stock prices | symbol={symbol}")
@@ -108,13 +113,14 @@ def fetch_commodity_prices_raw(functions: List[str], interval: str = "daily") ->
         logger.error(f"Invalid interval specified: {interval}")
         raise ValueError(f"Invalid interval: {interval}")
 
+    api_key = _get_api_key()
     records: List[Dict[str, Any]] = []
     for function in functions:
         params = {
             "function": function,
             "interval": interval,
             "datatype": "json",
-            "apikey": API_KEY,
+            "apikey": api_key,
         }
 
         logger.info(f"Fetching commodity prices | function={function}, interval={interval}")
@@ -127,6 +133,10 @@ def fetch_commodity_prices_raw(functions: List[str], interval: str = "daily") ->
         payload = resp["data"]
         
         data = payload.get("data", [])
+        logger.info(f"Processing {len(data)} records for commodity function={function}")
+        if len(data) == 0:
+            logger.warning(f"Response: {resp} for commodity function={function}")
+            continue
         for row in data:
             records.append({
                 # Business fields
@@ -145,8 +155,6 @@ def fetch_commodity_prices_raw(functions: List[str], interval: str = "daily") ->
                 "request_url": resp["url"],
                 "received_at": resp["received_at"],
             })
-
-        logger.info(f"Fetched {len(records)} commodity records | {function}")
     
     logger.info(f"Fetched total {len(records)} commodity records")
     return records
@@ -233,8 +241,8 @@ def run_commodity_prices_ingestion(functions: List[str], interval: str = "daily"
 
 if __name__ == "__main__":
     
-    stocks = ["AAPL", "MSFT"]
-    run_daily_stock_prices_ingestion(symbols=stocks, outputsize="compact")
+    # stocks = ["AAPL", "MSFT"]
+    # run_daily_stock_prices_ingestion(symbols=stocks, outputsize="compact")
 
     commodities = ["WTI", "NATURAL_GAS"]
     run_commodity_prices_ingestion(functions=commodities, interval="daily")
