@@ -1,4 +1,11 @@
 from datetime import datetime, timezone
+from src.utils.config import config
+
+def get_api_key(api_key:str) -> str:
+    api_key = config.get(api_key)
+    if not api_key:
+        raise RuntimeError(f"{api_key} is not configured")
+    return api_key
 
 def build_raw_key(
     domain: str,

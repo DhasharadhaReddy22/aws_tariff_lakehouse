@@ -1,13 +1,11 @@
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any
 from enum import Enum
-from dateutil.relativedelta import relativedelta
 
 from src.utils.api_client import APIClient
 from src.utils.bucket_client import bucket_client
-from src.utils.config import config
 from src.utils.logger import get_logger
-from .ingestion_utils import build_raw_key, create_filename
+from .ingestion_utils import build_raw_key, create_filename, get_api_key
 
 
 logger = get_logger(__name__, caller_file_path=__file__)
@@ -15,7 +13,6 @@ logger = get_logger(__name__, caller_file_path=__file__)
 DOMAIN = "financial_markets"
 SOURCE_NAME = "financial_modeling_prep"
 BASE_URL = "https://financialmodelingprep.com"
-API_KEY = config.get("FMP_API_KEY")
 
 fmp_client = APIClient(
     base_url=BASE_URL,
@@ -23,6 +20,7 @@ fmp_client = APIClient(
     max_retries=3,
     backoff_base=2,
     backoff_cap=10,
+    request_interval=1.1 # To allow for rate-limits
 )
 
 class DatasetType(str, Enum):
@@ -54,10 +52,9 @@ def fetch_market_risk_premium_raw(countries: List[str] | None = None,) -> List[D
         This metric represents the difference between the expected return of the stock market and the risk-free rate.
         It is used to assess the additional return that investors require for taking on the higher risk associated.
     """
-    if not API_KEY:
-        raise RuntimeError("FMP_API_KEY is not configured")
+    api_key = get_api_key("FMP_API_KEY")
 
-    resp = fmp_client.get("/stable/market-risk-premium", params={"apikey": API_KEY})
+    resp = fmp_client.get("/stable/market-risk-premium", params={"apikey": api_key})
 
     if not resp["ok"]:
         raise RuntimeError(f"FMP market risk premium failed: {resp['error']}")
@@ -84,7 +81,8 @@ def fetch_market_risk_premium_raw(countries: List[str] | None = None,) -> List[D
             "request_url": resp["url"],
             "received_at": resp["received_at"],
         })
-
+    
+    logger.info(f"Fetched total {len(records)} market risk premium records")
     return records
 
 def fetch_performance_raw(
@@ -100,8 +98,7 @@ def fetch_performance_raw(
     if mode not in ("snapshot", "historical"):
         raise ValueError("mode must be 'snapshot' or 'historical'")
 
-    if not API_KEY:
-        raise RuntimeError("FMP_API_KEY is not configured")
+    api_key = get_api_key("FMP_API_KEY")
 
     if not entities:
         logger.warning(f"No {level}s provided")
@@ -110,7 +107,7 @@ def fetch_performance_raw(
     if mode=="snapshot" and "date" in params:
         validate_date_within_last_30_days(params["date"])
         
-    params = {**params, "apikey": API_KEY}
+    params = {**params, "apikey": api_key}
     records: List[Dict[str, Any]] = []
 
     # Dataset resolution via enum
@@ -126,7 +123,7 @@ def fetch_performance_raw(
     # Snapshot
     if mode == "snapshot":
         endpoint = f"/stable/{level}-performance-snapshot"
-
+        logger.info(f"Fetching FMP {level} snapshot for entities: {entities}")
         resp = fmp_client.get(endpoint, params=params)
 
         if not resp["ok"]:
@@ -148,11 +145,12 @@ def fetch_performance_raw(
                 "request_url": resp["url"],
                 "received_at": resp["received_at"],
             })
+        logger.info(f"Fetched total {len(records)} {level} snapshot records")
 
     # Historical
     else:
         endpoint = f"/stable/historical-{level}-performance"
-
+        logger.info(f"Fetching FMP {level} historical data for entities: {entities}")
         for entity in entities:
             params[level] = entity
 
@@ -176,10 +174,11 @@ def fetch_performance_raw(
                     "request_url": resp["url"],
                     "received_at": resp["received_at"],
                 })
+        logger.info(f"Fetched total {len(records)} {level} historical records")
 
     return records
 
-def write_fmp_raw_to_s3(records: List[Dict[str, Any]], dataset: DatasetType) -> None:
+def write_fmp_raw_to_s3(records: List[Dict[str, Any]], dataset: DatasetType) -> Dict[str, Any]:
 
     if not records:
         logger.error("No FMP records to write")
@@ -201,8 +200,9 @@ def write_fmp_raw_to_s3(records: List[Dict[str, Any]], dataset: DatasetType) -> 
     logger.info(f"Writing FMP raw data to s3://{bucket_client.bucket_name}/{key}")
     bucket_client.put_jsonl(key, records)
     logger.info(f"Wrote FMP data to s3://{bucket_client.bucket_name}/{key}")
+    return {"keys": [key], "record_count": len(records), "ingested_at": ingested_at}
 
-def run_fmp_ingestion(dataset: DatasetType, **kwargs) -> None:
+def run_fmp_ingestion(dataset: DatasetType, **kwargs) -> Dict[str, Any]:
 
     if dataset == DatasetType.MARKET_RISK_PREMIUM:
         records = fetch_market_risk_premium_raw(**kwargs)
@@ -230,7 +230,8 @@ def run_fmp_ingestion(dataset: DatasetType, **kwargs) -> None:
     else:
         raise ValueError(f"Unsupported dataset: {dataset}")
 
-    write_fmp_raw_to_s3(records, dataset)
+    write_results = write_fmp_raw_to_s3(records, dataset)
+    return {"domain": DOMAIN, "source": SOURCE_NAME, "dataset": dataset, **write_results}
 
 if __name__ == "__main__":
     run_fmp_ingestion(

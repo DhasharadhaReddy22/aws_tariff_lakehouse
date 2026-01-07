@@ -1,12 +1,11 @@
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from enum import Enum
 
 from src.utils.api_client import APIClient
-from src.utils.config import config
 from src.utils.bucket_client import bucket_client
 from src.utils.logger import get_logger
-from src.ingestion.ingestion_utils import build_raw_key, create_filename
+from src.ingestion.ingestion_utils import build_raw_key, create_filename, get_api_key
 
 logger = get_logger(__name__, caller_file_path=__file__)
 
@@ -30,12 +29,6 @@ class DomainType(str, Enum):
     MARKET = "american_markets"
     COMMODITIES = "commodities"
 
-def _get_api_key() -> str:
-    api_key = config.get("ALPHAVANTAGE_API_KEY")
-    if not api_key:
-        raise RuntimeError("ALPHAVANTAGE_API_KEY is not configured")
-    return api_key
-
 def _safe_float(value):
     try:
         return float(value)
@@ -51,8 +44,8 @@ def fetch_daily_stock_prices_raw(symbols: List[str], outputsize: str = "compact"
     if not symbols:
         logger.error("No symbols provided for DAILY stock prices ingestion")
         raise ValueError("Symbols list is empty")
-    
-    api_key = _get_api_key()
+
+    api_key = get_api_key("ALPHAVANTAGE_API_KEY")
     records: List[Dict[str, Any]] = []
 
     for symbol in symbols:
@@ -113,7 +106,7 @@ def fetch_commodity_prices_raw(functions: List[str], interval: str = "daily") ->
         logger.error(f"Invalid interval specified: {interval}")
         raise ValueError(f"Invalid interval: {interval}")
 
-    api_key = _get_api_key()
+    api_key = get_api_key("ALPHAVANTAGE_API_KEY")
     records: List[Dict[str, Any]] = []
     for function in functions:
         params = {
@@ -183,10 +176,10 @@ def write_alphavantage_raw_to_s3(domain:DomainType, dataset: DatasetType,  recor
             ingestion_date=ingested_at[:10],
             filename=create_filename(dataset.value, ingested_at, ".jsonl"),
         )
-        keys.append(key)
         logger.info(f"Writing Alphavantage {domain.value} raw data → s3://{bucket_client.bucket_name}/{key}")
         bucket_client.put_jsonl(key, records)
         logger.info(f"Wrote {len(records)} records to s3://{bucket_client.bucket_name}/{key}")
+        keys.append(key)
         total_records += len(records)
         return {"keys": keys, "record_count": total_records, "ingested_at": ingested_at}
 

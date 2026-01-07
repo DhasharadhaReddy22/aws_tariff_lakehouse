@@ -16,13 +16,13 @@ IMF_BASE_URL = "https://www.imf.org"
 imf_client = APIClient(
     base_url=IMF_BASE_URL,
     timeout=30,
-    max_retries=3
+    max_retries=3,
+    backoff_base=2,
+    backoff_cap=10,
+    request_interval=1.1
 )
 
-def fetch_imf_indicators_raw(
-    indicator_codes: List[str],
-    params: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+def fetch_imf_indicators_raw(indicator_codes: List[str], params: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Fetch IMF indicators and return flattened raw records.
     """
@@ -81,7 +81,7 @@ def fetch_imf_indicators_raw(
     logger.info(f"Fetched {len(records)} IMF records for indicators={indicator_codes}, countries={countries}")
     return records
 
-def write_imf_raw_to_s3(records: List[Dict[str, Any]]) -> None:
+def write_imf_raw_to_s3(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Write IMF raw records to S3 using ingestion-date partitioning.
     """
@@ -105,13 +105,15 @@ def write_imf_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     logger.info(f"Writing IMF raw data to s3://{bucket_client.bucket_name}/{key}")
     bucket_client.put_jsonl(key, records)
     logger.info(f"Wrote IMF raw data to s3://{bucket_client.bucket_name}/{key}")
+    return {"keys": [key], "record_count": len(records), "ingested_at": ingested_at}
 
-def run_imf_ingestion(indicator_codes: List[str], params: Dict[str, Any]) -> None:
+def run_imf_ingestion(indicator_codes: List[str], params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Orchestrates a single IMF ingestion run.
     """
     records = fetch_imf_indicators_raw(indicator_codes=indicator_codes, params=params)
-    write_imf_raw_to_s3(records=records)
+    write_result = write_imf_raw_to_s3(records=records)
+    return {"domain": DOMAIN, "source": SOURCE_NAME, "dataset": DATASET, **write_result}
 
 if __name__ == "__main__":
     params = {

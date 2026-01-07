@@ -3,10 +3,9 @@ from typing import List, Dict, Any, Optional
 from enum import Enum
 
 from src.utils.api_client import APIClient
-from src.utils.config import config
 from src.utils.bucket_client import bucket_client
 from src.utils.logger import get_logger
-from .ingestion_utils import build_raw_key, create_filename
+from .ingestion_utils import build_raw_key, create_filename, get_api_key
 
 logger = get_logger(__name__, caller_file_path=__file__)
 
@@ -18,18 +17,14 @@ class DatasetType(str, Enum):
     TOP_HEADLINES = "top_headlines"
     EVERYTHING = "everything"
 
-NEWSAPI_KEY = config.get("NEWSAPI_API_KEY")
-if not NEWSAPI_KEY:
-    raise RuntimeError("NEWSAPI_API_KEY is not configured")
-
 newsapi_client = APIClient(
     base_url=BASE_URL,
     timeout=30,
     max_retries=3,
     backoff_base=2,
     backoff_cap=10,
+    request_interval=1.1  # To allow for rate-limits
 )
-
 
 def fetch_newsapi_top_headlines_raw(
     country: Optional[str] = None,
@@ -53,6 +48,7 @@ def fetch_newsapi_top_headlines_raw(
         A list of flattened article records.
     """
 
+    newsapi_api_key = get_api_key("NEWSAPI_API_KEY")
     params = {
         "pageSize": page_size,
         "page": page,
@@ -68,7 +64,7 @@ def fetch_newsapi_top_headlines_raw(
         params["q"] = q
 
     logger.info(f"Fetching NewsAPI top headlines | params={params}")
-    params["apiKey"] = NEWSAPI_KEY
+    params["apiKey"] = newsapi_api_key
     resp = newsapi_client.get("/v2/top-headlines", params=params)
 
     if not resp["ok"]:
@@ -121,6 +117,7 @@ def fetch_newsapi_everything_raw(
     This function ONLY indexes articles (no scraping).
     """
 
+    newsapi_api_key = get_api_key("NEWSAPI_API_KEY")
     if not q:
         raise ValueError("Parameter 'q' is required for NewsAPI everything endpoint")
 
@@ -148,7 +145,7 @@ def fetch_newsapi_everything_raw(
         params["language"] = language
 
     logger.info(f"Fetching NewsAPI everything | params={params}")
-    params["apiKey"] = NEWSAPI_KEY
+    params["apiKey"] = newsapi_api_key
 
     resp = newsapi_client.get("/v2/everything", params=params)
 
@@ -184,7 +181,7 @@ def fetch_newsapi_everything_raw(
     logger.info(f"Fetched {len(records)} articles from NewsAPI everything")
     return records
 
-def write_newsapi_raw(dataset: DatasetType, records: List[Dict[str, Any]]) -> None:
+def write_newsapi_raw(dataset: DatasetType, records: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Write raw records to storage.
     Args:
@@ -211,6 +208,7 @@ def write_newsapi_raw(dataset: DatasetType, records: List[Dict[str, Any]]) -> No
     logger.info(f"Writing {len(records)} records to s3://{bucket_client.bucket_name}/{key}")
     bucket_client.put_jsonl(key=key, records=records)
     logger.info(f"Wrote {len(records)} records to s3://{bucket_client.bucket_name}/{key}")
+    return {"keys": [key], "record_count": len(records), "ingested_at": ingested_at}
 
 def run_newsapi_top_headlines_ingestion(
     country: Optional[str] = None,
@@ -219,7 +217,7 @@ def run_newsapi_top_headlines_ingestion(
     q: Optional[str] = "American Tariffs on India",
     page_size: int = 100,
     page: int = 1,
-) -> None:
+) -> Dict[str, Any]:
 
     records = fetch_newsapi_top_headlines_raw(
         country=country,
@@ -229,7 +227,8 @@ def run_newsapi_top_headlines_ingestion(
         page_size=page_size,
         page=page,
     )
-    write_newsapi_raw(DatasetType.TOP_HEADLINES, records)
+    write_result = write_newsapi_raw(DatasetType.TOP_HEADLINES, records)
+    return {"domain": DOMAIN, "source": SOURCE_NAME, "dataset": DatasetType.TOP_HEADLINES.value, **write_result}
 
 def run_newsapi_everything_ingestion(
     q: str,
@@ -262,7 +261,8 @@ def run_newsapi_everything_ingestion(
         page=page,
     )
 
-    write_newsapi_raw(DatasetType.EVERYTHING, records)
+    write_result = write_newsapi_raw(DatasetType.EVERYTHING, records)
+    return {"domain": DOMAIN, "source": SOURCE_NAME, "dataset": DatasetType.EVERYTHING.value, **write_result}
 
 if __name__ == "__main__":
 

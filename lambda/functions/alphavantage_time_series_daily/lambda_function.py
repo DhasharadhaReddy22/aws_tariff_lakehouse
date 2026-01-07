@@ -6,7 +6,7 @@ from src.ingestion.alphavantage import run_daily_stock_prices_ingestion
 
 logger = get_logger(__name__, caller_file_path=__file__)
 
-def handler(event: Dict[str, Any], context) -> Dict[str, Any]:
+def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     logger.info(f"Received event: {event}")
 
     try:

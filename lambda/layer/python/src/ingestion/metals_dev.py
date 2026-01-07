@@ -5,9 +5,8 @@ from requests.structures import CaseInsensitiveDict
 
 from src.utils.api_client import APIClient
 from src.utils.bucket_client import bucket_client
-from src.utils.config import config
 from src.utils.logger import get_logger
-from .ingestion_utils import build_raw_key, create_filename
+from .ingestion_utils import build_raw_key, create_filename, get_api_key
 
 
 logger = get_logger(__name__, caller_file_path=__file__)
@@ -16,7 +15,6 @@ DOMAIN = "commodities"
 SOURCE_NAME = "metals_dev"
 DATASET = "spot_prices"
 BASE_URL = "https://api.metals.dev"
-API_KEY = config.get("METALS_DEV_API_KEY")
 
 headers = CaseInsensitiveDict()
 headers["Accept"] = "application/json"
@@ -28,6 +26,7 @@ metals_client = APIClient(
     max_retries=3,
     backoff_base=2,
     backoff_cap=10,
+    request_interval=1.1  # To allow for rate-limits
 )
 
 def fetch_metals_latest_raw(params: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -35,12 +34,11 @@ def fetch_metals_latest_raw(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     Fetch latest spot prices from Metals.dev and return flattened raw records.
     """
 
-    if not API_KEY:
-        raise RuntimeError("METALS_DEV_API_KEY is not configured")
+    api_key = get_api_key("METALS_DEV_API_KEY")
 
     request_params = {
         **params,
-        "api_key": API_KEY,
+        "api_key": api_key,
     }
 
     logger.info("Fetching Metals.dev latest spot prices")
@@ -85,8 +83,7 @@ def fetch_metals_latest_raw(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     logger.info(f"Fetched {len(records)} metal spot price records")
     return records
 
-
-def write_metals_raw_to_s3(records: List[Dict[str, Any]]) -> None:
+def write_metals_raw_to_s3(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Write Metals.dev raw records to S3 using ingestion-date partitioning.
     """
@@ -110,16 +107,16 @@ def write_metals_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     logger.info(f"Writing Metals.dev raw data to s3://{bucket_client.bucket_name}/{key}")
     bucket_client.put_jsonl(key, records)
     logger.info(f"Wrote Metals.dev raw data to s3://{bucket_client.bucket_name}/{key}")
+    return {"keys": [key], "record_count": len(records), "ingested_at": ingested_at}
 
-
-def run_metals_ingestion(params: Dict[str, Any]) -> None:
+def run_metals_ingestion(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Orchestrates a single Metals.dev ingestion run.
     """
 
     records = fetch_metals_latest_raw(params=params)
-    write_metals_raw_to_s3(records=records)
-
+    write_result = write_metals_raw_to_s3(records=records)
+    return {"domain": DOMAIN, "source": SOURCE_NAME, "dataset": DATASET, **write_result}
 
 if __name__ == "__main__":
     params = {

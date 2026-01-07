@@ -3,9 +3,8 @@ from typing import List, Dict, Any
 
 from src.utils.api_client import APIClient
 from src.utils.bucket_client import bucket_client
-from src.utils.config import config
 from src.utils.logger import get_logger
-from .ingestion_utils import *
+from .ingestion_utils import build_raw_key, create_filename, get_api_key, normalize_utc_datetime
 
 logger = get_logger(__name__, caller_file_path=__file__)
 
@@ -13,29 +12,27 @@ DOMAIN = "commodities"
 SOURCE_NAME = "twelvedata"
 DATASET = "exchange_rates"
 BASE_URL = "https://api.twelvedata.com"
-API_KEY = config.get("TWELVE_DATA_API_KEY")
 
 twelve_data_api = APIClient(
     base_url=BASE_URL,
     timeout=30,
     max_retries=3,
     backoff_base=2,
-    backoff_cap=10
+    backoff_cap=10,
+    request_interval=1.1  # To allow for rate-limits
 )
 
-def fetch_twelvedata_time_series_raw(
-    symbols: List[str],
-    params: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+def fetch_twelvedata_time_series_raw(symbols: List[str], params: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Fetch Twelve Data time-series data and return flattened raw records.
     """
 
+    api_key = get_api_key("TWELVE_DATA_API_KEY")
     if not symbols:
         logger.warning("No symbols provided for Twelve Data ingestion")
         return []
 
-    if not API_KEY:
+    if not api_key:
         raise RuntimeError("TWELVE_DATA_API_KEY is not configured")
 
     records: List[Dict[str, Any]] = []
@@ -44,7 +41,7 @@ def fetch_twelvedata_time_series_raw(
         symbol_params = {
             **params,
             "symbol": symbol,
-            "apikey": API_KEY,
+            "apikey": api_key,
         }
 
         logger.info(f"Fetching Twelve Data time series for symbol={symbol}")
@@ -87,8 +84,7 @@ def fetch_twelvedata_time_series_raw(
     logger.info(f"Fetched total {len(records)} Twelve Data records")
     return records
 
-
-def write_twelvedata_raw_to_s3(records: List[Dict[str, Any]]) -> None:
+def write_twelvedata_raw_to_s3(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Write Twelve Data raw records to S3 using ingestion-date partitioning.
     """
@@ -112,17 +108,15 @@ def write_twelvedata_raw_to_s3(records: List[Dict[str, Any]]) -> None:
     logger.info(f"Writing Twelve Data raw data to s3://{bucket_client.bucket_name}/{key}")
     bucket_client.put_jsonl(key, records)
     logger.info(f"Wrote Twelve Data raw data to s3://{bucket_client.bucket_name}/{key}")
+    return {"keys": [key], "record_count": len(records), "ingested_at": ingested_at}
 
-def run_twelvedata_ingestion(
-    symbols: List[str],
-    params: Dict[str, Any],
-) -> None:
+def run_twelvedata_ingestion(symbols: List[str], params: Dict[str, Any]) -> None:
     """
     Orchestrates a single Twelve Data ingestion run.
     """
-
     records = fetch_twelvedata_time_series_raw(symbols=symbols, params=params)
-    write_twelvedata_raw_to_s3(records=records)
+    write_result = write_twelvedata_raw_to_s3(records=records)
+    return {"domain": DOMAIN, "source": SOURCE_NAME, "dataset": DATASET, **write_result}
 
 if __name__ == "__main__":
     symbols = ["XAU/USD", "USD/INR"]
