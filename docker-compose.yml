@@ -31,11 +31,11 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_USER}:${AIRFLOW_PASSWORD}@postgres:5432/${AIRFLOW_DB}
-      PYTHONPATH: /opt/airflow/src
+      # PYTHONPATH: /opt/airflow/dags
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs # airflow system logs
-      - ./src:/opt/airflow/src
+      - ./airflow/utils:/opt/airflow/utils
       - /var/run/docker.sock:/var/run/docker.sock # this is to establish connection with our sock to docker sock
                                                   # this is done to allow Airflow to communicate with the Docker daemon and communicate with other containers
     group_add: 
@@ -43,7 +43,10 @@ services:
     # this is done to provide permission to access and run the docker.sock, 
     # it is for running docker commands to run DBT jobs/tasks in airflow container
     command: >
-      bash -c "airflow db migrate && airflow standalone"
+      bash -c "
+        airflow db migrate && 
+        python3 /opt/airflow/utils/create_aws_conn.py && 
+        airflow standalone"
     # this is to migrate the necessary Airflow metadata database schema && spins up a local webserver, scheduler, and runs initialization for development
     depends_on:
       - postgres

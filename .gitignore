@@ -218,4 +218,6 @@ dbt/profiles.yml
 lambda/layer/python/site-packages/*
 lambda/zips/*
 */__pycache__/
-continue_from.md
+DataContracts.md
+docs
+glue/notebooks/.*

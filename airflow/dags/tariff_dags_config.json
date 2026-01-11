@@ -1,0 +1,20 @@
+{
+  "imf_datamapper": {
+    "dag_id": "test_dag",
+    "schedule": "*/10 * * * *",
+    "source": "imf",
+    "domain": "macro",
+    "dataset": "datamapper",
+    "lambda_function_name": "test-layer-function",
+    "glue_silver_job": "tariff_imf_datamapper_silver",
+    "glue_gold_job": "tariff_imf_datamapper_gold",
+    "tags": ["tariff", "imf", "macro"],
+    "event": {
+      "indicator_codes": ["NGDP_RPCH", "NGDPD"],
+      "params": {
+        "years": [2023],
+        "countries": ["IND", "USA"]
+      }
+    }
+  }
+}
