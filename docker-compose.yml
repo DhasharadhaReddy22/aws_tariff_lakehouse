@@ -53,30 +53,54 @@ services:
     networks:
       - lakehouse
 
-  glue:
-    container_name: glue_jupyter
-    command: /home/glue_user/jupyter/jupyter_start.sh
+  # glue:
+  #   container_name: glue_jupyter
+  #   command: /home/glue_user/jupyter/jupyter_start.sh
+  #   environment:
+  #     - DISABLE_SSL=true
+  #     - AWS_PROFILE=glue_dev
+  #     - DATALAKE_FORMATS=iceberg
+  #   image: amazon/aws-glue-libs:glue_libs_4.0.0_image_01
+  #   ports:
+  #     # Spark web UI
+  #     - '4040:4040' 
+  #     - '4041:4041'
+  #     # Spark History server
+  #     - '28080:18080'
+  #     - '28081:18081'
+  #     # Jupyter web server
+  #     - '8998:8998'
+  #     - '8888:8888'
+  #   restart: always
+  #   volumes:
+  #     - ~/.aws:/home/glue_user/.aws:ro
+  #     # you can run `sudo chown -R 10000:10000 ./glue/workspace` 
+  #     # to allow glue user to have write access to workspace
+  #     - ./glue/scripts/:/home/glue_user/workspace/scripts/
+  #     - ./glue/notebooks/:/home/glue_user/workspace/jupyter_workspace/
+  #   networks:
+  #     - lakehouse
+
+  glue5:
+    container_name: glue_v5_livy_jupyter
+    image: glue_v5_livy_jupyter          # built from ./glue/Dockerfile.livy_jupyter
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --NotebookApp.token=''
     environment:
-      - DISABLE_SSL=true
       - AWS_PROFILE=glue_dev
+      - DISABLE_SSL=true
       - DATALAKE_FORMATS=iceberg
-    image: amazon/aws-glue-libs:glue_libs_4.0.0_image_01
     ports:
-      # Spark web UI
-      - '4040:4040' 
-      - '4041:4041'
-      # Spark History server
-      - '28080:18080'
-      - '28081:18081'
-      # Jupyter web server
-      - '8998:8998'
-      - '8888:8888'
-    restart: always
+      - "8998:8998"   # Livy
+      - "8888:8888"   # Jupyter
+      - "4040:4040"   # Spark UI (while job runs)
+      - "4041:4041"   # Spark UI (for 2nd job/app)
     volumes:
-      - ~/.aws:/home/glue_user/.aws:ro
-      # you can run `sudo chown -R 10000:10000 ./glue/workspace` 
-      # to allow glue user to have write access to workspace
-      - ./glue/notebooks/:/home/glue_user/workspace/jupyter_workspace/
+      - ~/.aws:/home/hadoop/.aws:ro
+      - ./glue/scripts/:/home/hadoop/workspace/scripts/
+      - ./glue/notebooks/:/home/hadoop/workspace/jupyter_workspace/
+      - ./glue/.vscode/:/home/hadoop/workspace/.vscode/
+    restart: always
     networks:
       - lakehouse
 

@@ -1,19 +1,35 @@
 {
   "imf_datamapper": {
-    "dag_id": "test_dag",
+    "dag_id": "imf_datamapper_dag",
     "schedule": "*/10 * * * *",
     "source": "imf",
-    "domain": "macro",
-    "dataset": "datamapper",
-    "lambda_function_name": "test-layer-function",
-    "glue_silver_job": "tariff_imf_datamapper_silver",
-    "glue_gold_job": "tariff_imf_datamapper_gold",
+    "domain": "macroeconomics",
+    "dataset": "indicators",
+    "lambda_function_name": "tariff_imf_datamapper_lambda_function",
+    "glue_job": "tariff_imf_datamapper_glue_job",
     "tags": ["tariff", "imf", "macro"],
     "event": {
       "indicator_codes": ["NGDP_RPCH", "NGDPD"],
       "params": {
         "years": [2023],
         "countries": ["IND", "USA"]
+      }
+    }
+  },
+  "alphavantage": {
+    "dag_id": "alphavantage_dag",
+    "schedule": "*/10 * * * *",
+    "source": "alphavantage",
+    "domain": "american_markets",
+    "dataset": "time_series_daily",
+    "lambda_function_name": "tariff_alphavantage_lambda_function",
+    "glue_job": "tariff_alphavantage_glue_job",
+    "tags": ["tariff", "alphavantage", "american_markets"],
+    "event": {
+      "dataset": "TIME_SERIES_DAILY",
+      "params": {
+        "symbols": ["AAPL", "MSFT"],
+        "outputsize": "compact"
       }
     }
   }

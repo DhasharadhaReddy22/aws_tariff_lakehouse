@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
 from airflow import DAG
-from airflow.decorators import task, get_current_context
+from airflow.decorators import task
 from airflow.models import Variable
 from airflow.providers.amazon.aws.operators.lambda_function import LambdaInvokeFunctionOperator
 from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
@@ -58,7 +58,7 @@ def create_tariff_dag(cfg: dict) -> DAG:
         )
 
         @task(task_id="extract_lambda_result")
-        def extract_lambda_result(lambda_response: dict) -> dict:
+        def extract_lambda_result(lambda_response: dict, **context) -> dict:
             """
             Normalize and validate Lambda response.
             This is the single source of truth for downstream Glue jobs.
@@ -69,7 +69,6 @@ def create_tariff_dag(cfg: dict) -> DAG:
             if lambda_response.get("record_count", 0) == 0:
                 raise ValueError("No records ingested by Lambda.")
 
-            context = get_current_context()
             return {
                 "domain": lambda_response["domain"],
                 "source": lambda_response["source"],
@@ -82,9 +81,9 @@ def create_tariff_dag(cfg: dict) -> DAG:
                 "run_id": context["run_id"],
             }
 
-        glue_silver = GlueJobOperator(
-            task_id="normalize_to_silver",
-            job_name=cfg["glue_silver_job"],
+        glue_job = GlueJobOperator(
+            task_id="glue_job",
+            job_name=cfg["glue_job"],
             aws_conn_id="aws_default",
             wait_for_completion=True,
             script_args={
@@ -99,20 +98,6 @@ def create_tariff_dag(cfg: dict) -> DAG:
             },
         )
 
-        glue_gold = GlueJobOperator(
-            task_id="aggregate_to_gold",
-            job_name=cfg["glue_gold_job"],
-            aws_conn_id="aws_default",
-            wait_for_completion=True,
-            script_args={
-                "--source": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['source'] }}",
-                "--domain": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['domain'] }}",
-                "--dataset": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['dataset'] }}",
-                "--dag_id": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['dag_id'] }}",
-                "--run_id": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['run_id'] }}",
-            },
-        )
-
         @task(task_id="end")
         def end():
             print(f"Ingestion completed for {cfg['source']}.{cfg['dataset']}")
@@ -122,7 +107,7 @@ def create_tariff_dag(cfg: dict) -> DAG:
         end_task = end()
 
         start_task >> invoke_lambda >> lambda_result
-        lambda_result >> glue_silver >> glue_gold >> end_task
+        lambda_result >> glue_job >> end_task
 
     return dag
 
