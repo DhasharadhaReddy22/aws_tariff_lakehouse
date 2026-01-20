@@ -87,14 +87,14 @@ def create_tariff_dag(cfg: dict) -> DAG:
             aws_conn_id="aws_default",
             wait_for_completion=True,
             script_args={
-                "--domain": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['domain'] }}",
-                "--source": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['source'] }}",
-                "--dataset": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['dataset'] }}",
-                "--keys": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['keys'] | tojson }}",
-                "--record_count": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['record_count'] }}",
-                "--ingested_at": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['ingested_at'] }}",
-                "--dag_id": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['dag_id'] }}",
-                "--run_id": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['run_id'] }}",
+                "--DOMAIN": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['domain'] }}",
+                "--SOURCE": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['source'] }}",
+                "--DATASET": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['dataset'] }}",
+                "--KEYS": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['keys'] | tojson }}",
+                "--RECORD_COUNT": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['record_count'] }}",
+                "--INGESTED_AT": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['ingested_at'] }}",
+                "--DAG_ID": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['dag_id'] }}",
+                "--RUN_ID": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['run_id'] }}",
             },
         )
 
