@@ -15,7 +15,7 @@ with open(CONFIG_PATH, "r") as f:
 
 DEFAULT_ARGS = {
     "retries": 1,
-    "retry_delay": timedelta(minutes=2),
+    "retry_delay": timedelta(seconds=300),
 }
 
 def create_tariff_dag(cfg: dict) -> DAG:
@@ -29,7 +29,7 @@ def create_tariff_dag(cfg: dict) -> DAG:
             "source": cfg["source"],
             "domain": cfg["domain"],
             "dataset": cfg["dataset"],
-            "event": cfg.get("event", {}),
+            "api_params": cfg.get("api_params", {}),
             "triggered_at": datetime.now(timezone.utc).isoformat(),
         }
     
@@ -63,7 +63,18 @@ def create_tariff_dag(cfg: dict) -> DAG:
             Normalize and validate Lambda response.
             This is the single source of truth for downstream Glue jobs.
             """
-            if lambda_response.get("status") != "SUCCESS":
+            print("Extracting and validating Lambda response...")
+            print(f"Lambda response: {lambda_response}")
+
+            if isinstance(lambda_response, str):
+                try:
+                    lambda_response = json.loads(lambda_response)
+                except json.JSONDecodeError as e:
+                    raise ValueError(
+                        f"Failed to decode Lambda response as JSON: {lambda_response}"
+                    ) from e
+                
+            if lambda_response.get("status", None) != "SUCCESS":
                 raise RuntimeError(f"Lambda ingestion failed: {lambda_response}")
             
             if lambda_response.get("record_count", 0) == 0:

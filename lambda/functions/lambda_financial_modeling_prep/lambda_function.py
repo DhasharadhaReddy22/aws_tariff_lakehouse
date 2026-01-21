@@ -23,12 +23,12 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
 
     logger.info(f"Received event: {event}")
-
+    api_params = event.get("api_params")
     lambda_exec_ts = datetime.now(timezone.utc).isoformat()
 
     try:
-        dataset_raw = event.get("dataset")
-        params = event.get("params", {})
+        dataset_raw = api_params.get("dataset")
+        params = api_params.get("params", {})
 
         if not dataset_raw:
             raise ValueError("Missing required field: dataset")

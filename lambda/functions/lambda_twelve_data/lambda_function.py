@@ -23,11 +23,12 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
 
     logger.info(f"Received event: {event}")
+    api_params = event.get("api_params")
     lambda_exec_ts = datetime.now(timezone.utc).isoformat()
 
     try:
-        symbols = event.get("symbols")
-        params = event.get("params", {})
+        symbols = api_params.get("symbols")
+        params = api_params.get("params", {})
 
         if not symbols:
             raise ValueError("Missing required field: symbols")
