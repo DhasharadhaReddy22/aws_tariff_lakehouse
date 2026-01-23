@@ -220,4 +220,5 @@ lambda/zips/*
 */__pycache__/
 docs
 glue/notebooks/.*
+glue/scripts/.*
 markdowns
