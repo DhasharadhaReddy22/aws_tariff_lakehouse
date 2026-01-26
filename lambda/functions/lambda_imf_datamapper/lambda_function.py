@@ -13,8 +13,8 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
 
     Expected event structure:
     {
-        "indicator_codes": ["NGDP_RPCH", "NGDPD", ...],
         "params": {
+            "indicator_codes": ["NGDP_RPCH", "NGDPD", ...],
             "years": [2021, 2022],
             "countries": ["IND", "USA"]
         }
@@ -26,19 +26,15 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     lambda_exec_ts = datetime.now(timezone.utc).isoformat()
 
     try:
-        indicator_codes = api_params.get("indicator_codes")
-        params = api_params.get("params", {})
-
-        if not indicator_codes:
-            raise ValueError("Missing required field: indicator_codes")
+        params = api_params.get("params")
 
         if not params:
             raise ValueError("Missing required field: params")
 
-        result = run_imf_ingestion(
-            indicator_codes=indicator_codes,
-            params=params,
-        )
+        if not params.get("indicator_codes", {}):
+            raise ValueError("Missing required field: indicator_codes")
+
+        result = run_imf_ingestion(params=params)
 
         return {
             "status": "SUCCESS",

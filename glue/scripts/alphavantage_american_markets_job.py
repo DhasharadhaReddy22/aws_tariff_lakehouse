@@ -13,9 +13,9 @@ spark-submit \
   --INGESTED_AT 2025-12-19T18:58:17.203499+00:00 \
   --DAG_ID dag_ig \
   --RUN_ID manual_run \
-  > /home/hadoop/workspace/scripts/spark_log.log 2>&1
+  > /home/hadoop/workspace/scripts/logs/alphavanatge_murican_markets_spark_log.log 2>&1
 
-and view the live spark job logs in the spark_log.log file or,
+and view the live spark job logs in the alphavanatge_murican_markets_spark_log.log file or,
 have the spark UI enabled in the /usr/lib/spark/conf/spark-defaults.conf
 """
 

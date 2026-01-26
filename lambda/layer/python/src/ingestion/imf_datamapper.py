@@ -22,30 +22,32 @@ imf_client = APIClient(
     request_interval=1.1
 )
 
-def fetch_imf_indicators_raw(indicator_codes: List[str], params: Dict[str, Any]) -> List[Dict[str, Any]]:
+def fetch_imf_indicators_raw(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Fetch IMF indicators and return flattened raw records.
     """
-
-    if not indicator_codes:
-        logger.warning("No indicator codes provided")
-        return []
-
-    years = params.get("years")
+    years = params.get("years", [])
     countries = params.get("countries")
+    indicator_codes = params.get("indicator_codes")
 
-    if not years or not countries:
-        raise ValueError("Both 'years' and 'countries' must be provided")
+    if not countries or not indicator_codes:
+        raise ValueError("Both 'indicator_codes' and 'countries' must be provided")
 
     indicators_url = "/".join(indicator_codes)
     countries_url = "/".join(countries)
     years_url = ",".join(map(str, years))
 
-    endpoint = (
-        f"/external/datamapper/api/v1/"
-        f"{indicators_url}/{countries_url}"
-        f"?periods={years_url}"
-    )
+    if years:
+        endpoint = (
+            f"/external/datamapper/api/v1/"
+            f"{indicators_url}/{countries_url}"
+            f"?periods={years_url}"
+        )
+    else:
+        endpoint = (
+            f"/external/datamapper/api/v1/"
+            f"{indicators_url}/{countries_url}"
+        )
     
     logger.info(f"Fetching IMF indicators from endpoint: {endpoint}")
     resp = imf_client.get(endpoint)
@@ -107,19 +109,20 @@ def write_imf_raw_to_s3(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     logger.info(f"Wrote IMF raw data to s3://{bucket_client.bucket_name}/{key}")
     return {"keys": [key], "record_count": len(records), "ingested_at": ingested_at}
 
-def run_imf_ingestion(indicator_codes: List[str], params: Dict[str, Any]) -> Dict[str, Any]:
+def run_imf_ingestion(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Orchestrates a single IMF ingestion run.
     """
-    records = fetch_imf_indicators_raw(indicator_codes=indicator_codes, params=params)
+    records = fetch_imf_indicators_raw(params=params)
     write_result = write_imf_raw_to_s3(records=records)
     return {"domain": DOMAIN, "source": SOURCE_NAME, "dataset": DATASET, **write_result}
 
 if __name__ == "__main__":
     params = {
-        "years": [2021],
+        # "years": [2021],
+        "indicator_codes": ["NGDP_RPCH", "NGDPD"],
         "countries": ["IND", "USA"]
     }
 
-    result = run_imf_ingestion(["NGDP_RPCH", "NGDPD"], params=params)
+    result = run_imf_ingestion(params=params)
     print(result)

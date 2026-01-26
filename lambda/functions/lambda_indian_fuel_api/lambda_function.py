@@ -42,8 +42,8 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
 
         result = run_fuel_ingestion(
             dataset=dataset_enum,
-            location=params.get("location"),
-            output_size=params.get("output_size"),
+            location=params.get("location", None),
+            output_size=params.get("output_size", None),
         )
 
         return {

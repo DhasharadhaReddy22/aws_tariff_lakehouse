@@ -1,19 +1,235 @@
 {
-  "imf_datamapper": {
-    "dag_id": "imf_datamapper_dag",
-    "schedule": "*/10 * * * *",
+  "imf_datamapper_macroeconomics": {
+    "dag_id": "imf_datamapper_macroeconomics_dag",
+    "schedule": "*/25 * * * *",
     "source": "imf",
     "domain": "macroeconomics",
     "dataset": "indicators",
     "lambda_function_name": "tariff_imf_datamapper_lambda_function",
     "glue_job": "tariff_imf_datamapper_glue_job",
-    "tags": ["tariff", "imf", "macro"],
+    "tags": ["tariff", "imf", "macroeconomics"],
     "api_params": {
-      "indicator_codes": ["NGDP_RPCH", "NGDPD"],
       "params": {
+        "indicator_codes": ["NGDP_RPCH", "NGDPD"],
         "years": [2023],
         "countries": ["IND", "USA"]
       }
+    }
+  },
+  "alphavantage_american_markets": {
+    "dag_id": "alphavantage_american_markets_dag",
+    "schedule": "*/25 * * * *",
+    "source": "alphavantage",
+    "domain": "american_markets",
+    "dataset": "time_series_daily",
+    "lambda_function_name": "tariff_alphavantage_lambda_function",
+    "glue_job": "tariff_alphavantage_american_markets_glue_job",
+    "tags": ["tariff", "alphavantage", "american_markets"],
+    "api_params": {
+      "dataset": "TIME_SERIES_DAILY",
+      "params": {
+        "symbols": ["AAPL", "MSFT"],
+        "outputsize": "compact"
+      }
+    }
+  },
+  "alphavantage_commodities": {
+    "dag_id": "alphavantage_commodities_dag",
+    "schedule": "*/25 * * * *",
+    "source": "alphavantage",
+    "domain": "commodities",
+    "dataset": "commodity_prices",
+    "lambda_function_name": "tariff_alphavantage_lambda_function",
+    "glue_job": "tariff_alphavantage_commodities_glue_job",
+    "tags": ["tariff", "alphavantage", "commodities"],
+    "api_params": {
+      "dataset": "COMMODITY",
+      "params": {
+        "commodities": ["WTI", "NATURAL_GAS"],
+        "interval": "daily"
+      }
+    }
+  },
+  "fmp_risk_premium": {
+    "dag_id": "fmp_risk_premium_dag",
+    "schedule": "*/25 * * * *",
+    "source": "financial_modeling_prep",
+    "domain": "financial_markets",
+    "dataset": "market_risk_premium",
+    "lambda_function_name": "tariff_fmp_lambda_function",
+    "glue_job": "tariff_fmp_market_risk_premium_glue_job",
+    "tags": ["tariff", "financial_modeling_prep", "financial_markets"],
+    "api_params": {
+      "dataset": "MARKET_RISK_PREMIUM",
+      "params": {
+        "countries": ["United States", "India"]
+      }
+    }
+  },
+  "metals_dev": {
+    "dag_id": "metals_dev_dag",
+    "schedule": "*/25 * * * *",
+    "source": "metals_dev",
+    "domain": "commodities",
+    "dataset": "spot_prices",
+    "lambda_function_name": "tariff_metals_dev_lambda_function",
+    "glue_job": "tariff_metals_dev_glue_job",
+    "tags": ["tariff", "metals_dev", "metals"],
+    "api_params": {
+      "params": {
+        "currency": "USD",
+        "unit": "toz"
+      }
+    }
+  },
+  "twelvedata": {
+    "dag_id": "twelvedata_dag",
+    "schedule": "*/25 * * * *",
+    "source": "twelvedata",
+    "domain": "commodities",
+    "dataset": "exchange_rates",
+    "lambda_function_name": "tariff_twelvedata_lambda_function",
+    "glue_job": "tariff_twelvedata_glue_job",
+    "tags": ["tariff", "twelvedata", "exchange_rates"],
+    "api_params": {
+      "symbols" : ["XAU/USD", "USD/INR"],
+      "params" : {
+          "interval": "1h",
+          "dp": 4,
+          "timezone": "utc",
+          "exchange": "NASDAQ",
+          "format": "JSON",
+          "outputsize": 12
+      }
+    }
+  },
+  "petrol_state_indian_fuel_api": {
+    "dag_id": "petrol_state_indian_fuel_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_fuel_api",
+    "domain": "energy",
+    "dataset": "petrol_state_live",
+    "lambda_function_name": "tariff_indian_fuel_api_lambda_function",
+    "glue_job": "tariff_petrol_state_live_glue_job",
+    "tags": ["tariff", "indian_fuel_api", "fuel_prices"],
+    "api_params": {
+      "dataset": "PETROL_STATE_LIVE"
+    }
+  },
+  "diesel_state_indian_fuel_api": {
+    "dag_id": "diesel_state_indian_fuel_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_fuel_api",
+    "domain": "energy",
+    "dataset": "diesel_state_live",
+    "lambda_function_name": "tariff_indian_fuel_api_lambda_function",
+    "glue_job": "tariff_diesel_state_live_glue_job",
+    "tags": ["tariff", "indian_fuel_api", "fuel_prices"],
+    "api_params": {
+      "dataset": "DIESEL_STATE_LIVE"
+    }
+  },
+  "stock_indian_stock_api": {
+    "dag_id": "stock_indian_stock_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_stock_api",
+    "domain": "indian_markets",
+    "dataset": "stock",
+    "lambda_function_name": "tariff_indian_stock_api_lambda_function",
+    "glue_job": "tariff_stock_indian_stock_api_glue_job",
+    "tags": ["tariff", "indian_stock_api", "indian_markets"],
+    "api_params": {
+      "dataset": "STOCK_METADATA",
+      "params": {
+        "stock_names": ["TITAN", "BHARATFORG"]
+      }
+    }
+  },
+  "historical_data_indian_stock_api": {
+    "dag_id": "historical_data_indian_stock_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_stock_api",
+    "domain": "indian_markets",
+    "dataset": "historical_data",
+    "lambda_function_name": "tariff_indian_stock_api_lambda_function",
+    "glue_job": "tariff_historical_data_indian_stock_api_glue_job",
+    "tags": ["tariff", "indian_stock_api", "indian_markets"],
+    "api_params": {
+      "dataset": "HISTORICAL_DATA",
+      "params": {
+        "stock_names": ["TITAN", "BHARATFORG"],
+        "period": "5yr",
+        "filter": "price"
+      }
+    }
+  },
+  "historical_stats_indian_stock_api": {
+    "dag_id": "historical_stats_indian_stock_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_stock_api",
+    "domain": "indian_markets",
+    "dataset": "historical_stats",
+    "lambda_function_name": "tariff_indian_stock_api_lambda_function",
+    "glue_job": "tariff_historical_stats_indian_stock_api_glue_job",
+    "tags": ["tariff", "indian_stock_api", "indian_markets"],
+    "api_params": {
+      "dataset": "HISTORICAL_STATS",
+      "params": {
+        "stock_names": ["TITAN", "BHARATFORG"],
+        "stats_list": ["quarter_results", "yoy_results"]
+      }
+    }
+  },
+  "trending_indian_stock_api": {
+    "dag_id": "trending_indian_stock_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_stock_api",
+    "domain": "indian_markets",
+    "dataset": "trending",
+    "lambda_function_name": "tariff_indian_stock_api_lambda_function",
+    "glue_job": "tariff_trending_indian_stock_api_glue_job",
+    "tags": ["tariff", "indian_stock_api", "indian_markets"],
+    "api_params": {
+      "dataset": "TRENDING"
+    }
+  },
+  "nse_most_active_indian_stock_api": {
+    "dag_id": "nse_most_active_indian_stock_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_stock_api",
+    "domain": "indian_markets",
+    "dataset": "nse_most_active",
+    "lambda_function_name": "tariff_indian_stock_api_lambda_function",
+    "glue_job": "tariff_nse_most_active_indian_stock_api_glue_job",
+    "tags": ["tariff", "indian_stock_api", "indian_markets"],
+    "api_params": {
+      "dataset": "NSE_MOST_ACTIVE"
+    }
+  },
+  "price_shockers_indian_stock_api": {
+    "dag_id": "price_shockers_indian_stock_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_stock_api",
+    "domain": "indian_markets",
+    "dataset": "price_shockers",
+    "lambda_function_name": "tariff_indian_stock_api_lambda_function",
+    "glue_job": "tariff_price_shockers_indian_stock_api_glue_job",
+    "tags": ["tariff", "indian_stock_api", "indian_markets"],
+    "api_params": {
+      "dataset": "PRICE_SHOCKERS"
+    }
+  },
+  "52_week_hld_indian_stock_api": {
+    "dag_id": "52_week_hld_indian_stock_api_dag",
+    "schedule": "*/25 * * * *",
+    "source": "indian_stock_api",
+    "domain": "indian_markets",
+    "dataset": "52_week_high_low_data",
+    "lambda_function_name": "tariff_indian_stock_api_lambda_function",
+    "glue_job": "tariff_52_week_hld_indian_stock_api_glue_job",
+    "tags": ["tariff", "indian_stock_api", "indian_markets"],
+    "api_params": {
+      "dataset": "FETCH_52_WEEK_HLD"
     }
   },
   "test": {
