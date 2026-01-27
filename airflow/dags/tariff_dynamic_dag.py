@@ -106,6 +106,7 @@ def create_tariff_dag(cfg: dict) -> DAG:
                 "--INGESTED_AT": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['ingested_at'] }}",
                 "--DAG_ID": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['dag_id'] }}",
                 "--RUN_ID": "{{ ti.xcom_pull(task_ids='extract_lambda_result')['run_id'] }}",
+                "--datalake-formats": "iceberg"
             },
         )
 

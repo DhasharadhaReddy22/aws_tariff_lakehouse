@@ -58,16 +58,11 @@ KEYS = json.loads(args["KEYS"])
 DAG_ID = args["DAG_ID"]
 RUN_ID = args["RUN_ID"]
 
-if not KEYS:
-    raise ValueError("No bronze files provided to Silver job")
-
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Spark / Iceberg setup
 
 LAKEHOUSE_BUCKET = "s3://dummy-lakehouse"
 GLUE_CATALOG = "glue_catalog"
-
-logger.info("Starting spark session")
 
 spark = (
     SparkSession.builder
@@ -80,7 +75,7 @@ spark = (
     .getOrCreate()
 )
 
-logger.info("Spark session started")
+logger.info(f"Spark session started, configured to catalog={GLUE_CATALOG} and lakehouse_bucket={spark.conf.get(f'spark.sql.catalog.{GLUE_CATALOG}.warehouse')}")
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Catalog objects
@@ -246,7 +241,8 @@ USING incoming_dedup s
 ON t.symbol = s.symbol AND t.trade_date = s.trade_date AND t.is_current = true
 WHEN MATCHED AND t.record_hash <> s.record_hash THEN
   UPDATE SET t.effective_to = s.effective_from, t.is_current = false
-WHEN NOT MATCHED THEN INSERT *
+WHEN NOT MATCHED THEN 
+  INSERT *
 """)
 
 logger.info("Running Silver SCD2 invariant checks...")
