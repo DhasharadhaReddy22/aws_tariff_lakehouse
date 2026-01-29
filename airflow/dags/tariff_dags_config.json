@@ -10,9 +10,7 @@
     "tags": ["tariff", "imf", "macroeconomics"],
     "api_params": {
       "params": {
-        "indicator_codes": ["NGDP_RPCH", "NGDPD"],
-        "years": [2023],
-        "countries": ["IND", "USA"]
+        "indicator_codes": ["BCA_NGDPD", "PCPIPCH", "NGDP_RPCH", "LUR"]
       }
     }
   },

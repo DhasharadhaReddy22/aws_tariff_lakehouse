@@ -27,26 +27,37 @@ def fetch_imf_indicators_raw(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     Fetch IMF indicators and return flattened raw records.
     """
     years = params.get("years", [])
-    countries = params.get("countries")
+    countries = params.get("countries", [])
     indicator_codes = params.get("indicator_codes")
 
-    if not countries or not indicator_codes:
+    if not indicator_codes:
         raise ValueError("Both 'indicator_codes' and 'countries' must be provided")
 
     indicators_url = "/".join(indicator_codes)
     countries_url = "/".join(countries)
     years_url = ",".join(map(str, years))
 
-    if years:
+    if years and countries:
         endpoint = (
             f"/external/datamapper/api/v1/"
             f"{indicators_url}/{countries_url}"
             f"?periods={years_url}"
         )
-    else:
+    elif not years and countries:
         endpoint = (
             f"/external/datamapper/api/v1/"
             f"{indicators_url}/{countries_url}"
+        )
+    elif years and not countries:
+        endpoint = (
+            f"/external/datamapper/api/v1/"
+            f"{indicators_url}"
+            f"?periods={years_url}"
+        )
+    else:
+        endpoint = (
+            f"/external/datamapper/api/v1/"
+            f"{indicators_url}"
         )
     
     logger.info(f"Fetching IMF indicators from endpoint: {endpoint}")
