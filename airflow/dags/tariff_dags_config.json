@@ -44,7 +44,7 @@
       "dataset": "COMMODITY",
       "params": {
         "commodities": ["WTI", "NATURAL_GAS"],
-        "interval": "daily"
+        "interval": "monthly"
       }
     }
   },
