@@ -129,6 +129,7 @@ silver_incoming = (
     .withColumn("interval", col("interval"))
     .withColumn("currency_base", col("currency_base"))
     .withColumn("currency_quote", col("currency_quote"))
+    .withColumn("type", col("type"))
     .withColumn("market_time", to_timestamp(col("market_time")))
     .withColumn("year_month", date_format(col("market_time"), "yyyy-MM"))
 
@@ -152,28 +153,33 @@ silver_incoming = (
 logger.info("Creating Silver FX table if not exists")
 
 spark.sql(f"""
-CREATE TABLE IF NOT EXISTS {SILVER_FQN} (
-  symbol STRING,
-  interval STRING,
-  currency_base STRING,
-  currency_quote STRING,
-  market_time TIMESTAMP,
-  year_month STRING,
-  open DOUBLE,
-  high DOUBLE,
-  low DOUBLE,
-  close DOUBLE,
-  source STRING,
-  dataset STRING,
-  request_url STRING,
-  received_at TIMESTAMP,
-  ingested_at TIMESTAMP,
-  dag_id STRING,
-  run_id STRING,
-  processed_at TIMESTAMP
-)
-USING iceberg
-PARTITIONED BY (year_month)
+    CREATE TABLE IF NOT EXISTS {SILVER_FQN} (
+      symbol STRING,
+      interval STRING,
+      currency_base STRING,
+      currency_quote STRING,
+      type STRING,
+      market_time TIMESTAMP,
+      year_month STRING,
+      
+      open DOUBLE,
+      high DOUBLE,
+      low DOUBLE,
+      close DOUBLE,
+      
+      source STRING,
+      dataset STRING,
+      
+      request_url STRING,
+      received_at TIMESTAMP,
+      ingested_at TIMESTAMP,
+      
+      dag_id STRING,
+      run_id STRING,
+      processed_at TIMESTAMP
+    )
+    USING iceberg
+    PARTITIONED BY (year_month)
 """)
 
 logger.info("Appending incoming records into Silver FX table")
@@ -194,10 +200,10 @@ logger.info("Silver FX append completed")
 logger.info("Checking for duplicate business keys in Silver FX table")
 
 dup_keys_df = spark.sql(f"""
-SELECT symbol, market_time, COUNT(*) AS cnt
-FROM {SILVER_FQN}
-GROUP BY symbol, market_time
-HAVING COUNT(*) > 1
+    SELECT symbol, market_time, COUNT(*) AS cnt
+    FROM {SILVER_FQN}
+    GROUP BY symbol, market_time
+    HAVING COUNT(*) > 1
 """)
 
 dup_key_count = dup_keys_df.count()
@@ -243,21 +249,21 @@ else:
 logger.info("Creating Gold FX fact table if not exists")
 
 spark.sql(f"""
-CREATE TABLE IF NOT EXISTS {GOLD_FACT_FQN} (
-  symbol STRING,
-  interval STRING,
-  currency_base STRING,
-  currency_quote STRING,
-  market_time TIMESTAMP,
-  year_month STRING,
-  open DOUBLE,
-  high DOUBLE,
-  low DOUBLE,
-  close DOUBLE,
-  processed_at TIMESTAMP
-)
-USING iceberg
-PARTITIONED BY (year_month)
+    CREATE TABLE IF NOT EXISTS {GOLD_FACT_FQN} (
+      symbol STRING,
+      interval STRING,
+      currency_base STRING,
+      currency_quote STRING,
+      market_time TIMESTAMP,
+      year_month STRING,
+      open DOUBLE,
+      high DOUBLE,
+      low DOUBLE,
+      close DOUBLE,
+      processed_at TIMESTAMP
+    )
+    USING iceberg
+    PARTITIONED BY (year_month)
 """)
 
 logger.info("Preparing deduplicated snapshot for Gold FX table")
