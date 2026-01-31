@@ -48,22 +48,6 @@
       }
     }
   },
-  "fmp_risk_premium": {
-    "dag_id": "fmp_risk_premium_dag",
-    "schedule": "*/25 * * * *",
-    "source": "financial_modeling_prep",
-    "domain": "financial_markets",
-    "dataset": "market_risk_premium",
-    "lambda_function_name": "tariff_fmp_lambda_function",
-    "glue_job": "tariff_fmp_market_risk_premium_glue_job",
-    "tags": ["tariff", "financial_modeling_prep", "financial_markets"],
-    "api_params": {
-      "dataset": "MARKET_RISK_PREMIUM",
-      "params": {
-        "countries": ["United States", "India"]
-      }
-    }
-  },
   "metals_dev": {
     "dag_id": "metals_dev_dag",
     "schedule": "*/25 * * * *",
@@ -90,14 +74,30 @@
     "glue_job": "tariff_twelvedata_glue_job",
     "tags": ["tariff", "twelvedata", "exchange_rates"],
     "api_params": {
-      "symbols" : ["XAU/USD", "USD/INR"],
+      "symbols" : ["USD/INR"],
       "params" : {
-          "interval": "1h",
+          "interval": "1day",
           "dp": 4,
           "timezone": "utc",
           "exchange": "NASDAQ",
           "format": "JSON",
-          "outputsize": 12
+          "outputsize": 365
+      }
+    }
+  },
+  "fmp_risk_premium": {
+    "dag_id": "fmp_risk_premium_dag",
+    "schedule": "*/25 * * * *",
+    "source": "financial_modeling_prep",
+    "domain": "financial_markets",
+    "dataset": "market_risk_premium",
+    "lambda_function_name": "tariff_fmp_lambda_function",
+    "glue_job": "tariff_fmp_market_risk_premium_glue_job",
+    "tags": ["tariff", "financial_modeling_prep", "financial_markets"],
+    "api_params": {
+      "dataset": "MARKET_RISK_PREMIUM",
+      "params": {
+        "countries": ["United States", "India"]
       }
     }
   },
@@ -228,23 +228,6 @@
     "tags": ["tariff", "indian_stock_api", "indian_markets"],
     "api_params": {
       "dataset": "FETCH_52_WEEK_HLD"
-    }
-  },
-  "test": {
-    "dag_id": "test_dag",
-    "schedule": "*/25 * * * *",
-    "source": "alphavantage",
-    "domain": "american_markets",
-    "dataset": "time_series_daily",
-    "lambda_function_name": "test_lambda_function",
-    "glue_job": "test_glue_job",
-    "tags": ["tariff", "test", "dag"],
-    "api_params": {
-      "dataset": "TIME_SERIES_DAILY",
-      "params": {
-        "symbols": ["AAPL", "MSFT"],
-        "outputsize": "compact"
-      }
     }
   }
 }
