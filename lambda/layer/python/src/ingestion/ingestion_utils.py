@@ -30,11 +30,17 @@ def normalize_utc_datetime(dt_str: str) -> str:
     """
     Convert 'YYYY-MM-DD HH:MM:SS' → ISO-8601 UTC string
     """
-    return (
-        datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-        .replace(tzinfo=timezone.utc)
-        .isoformat()
-    )
+    if dt_str is None:
+        return None
+    try:
+        return (
+            datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+            .replace(tzinfo=timezone.utc)
+            .isoformat()
+        )
+    except ValueError:
+        # e.g. '2026-01-31' or any other non-matching format
+        return dt_str
 
 def create_filename(prefix: str, iso_ts: str, ext: str = ".jsonl") -> str:
     """
