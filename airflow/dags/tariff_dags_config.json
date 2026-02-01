@@ -1,7 +1,7 @@
 {
   "imf_datamapper_macroeconomics": {
     "dag_id": "imf_datamapper_macroeconomics_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@monthly",
     "source": "imf",
     "domain": "macroeconomics",
     "dataset": "indicators",
@@ -16,7 +16,7 @@
   },
   "alphavantage_american_markets": {
     "dag_id": "alphavantage_american_markets_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "alphavantage",
     "domain": "american_markets",
     "dataset": "time_series_daily",
@@ -33,7 +33,7 @@
   },
   "alphavantage_commodities": {
     "dag_id": "alphavantage_commodities_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@weekly",
     "source": "alphavantage",
     "domain": "commodities",
     "dataset": "commodity_prices",
@@ -50,7 +50,7 @@
   },
   "metals_dev": {
     "dag_id": "metals_dev_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "metals_dev",
     "domain": "commodities",
     "dataset": "spot_prices",
@@ -66,7 +66,7 @@
   },
   "twelvedata": {
     "dag_id": "twelvedata_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "twelvedata",
     "domain": "commodities",
     "dataset": "exchange_rates",
@@ -87,7 +87,7 @@
   },
   "fmp_risk_premium": {
     "dag_id": "fmp_risk_premium_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@weekly",
     "source": "financial_modeling_prep",
     "domain": "financial_markets",
     "dataset": "market_risk_premium",
@@ -103,7 +103,7 @@
   },
   "petrol_state_indian_fuel_api": {
     "dag_id": "petrol_state_indian_fuel_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "indian_fuel_api",
     "domain": "energy",
     "dataset": "petrol_state_live",
@@ -116,7 +116,7 @@
   },
   "diesel_state_indian_fuel_api": {
     "dag_id": "diesel_state_indian_fuel_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "indian_fuel_api",
     "domain": "energy",
     "dataset": "diesel_state_live",
@@ -129,7 +129,7 @@
   },
   "stock_indian_stock_api": {
     "dag_id": "stock_indian_stock_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@weekly",
     "source": "indian_stock_api",
     "domain": "indian_markets",
     "dataset": "stock",
@@ -145,7 +145,7 @@
   },
   "historical_data_indian_stock_api": {
     "dag_id": "historical_data_indian_stock_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "indian_stock_api",
     "domain": "indian_markets",
     "dataset": "historical_data",
@@ -163,7 +163,7 @@
   },
   "historical_stats_indian_stock_api": {
     "dag_id": "historical_stats_indian_stock_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@monthly",
     "source": "indian_stock_api",
     "domain": "indian_markets",
     "dataset": "historical_stats",
@@ -180,7 +180,7 @@
   },
   "trending_indian_stock_api": {
     "dag_id": "trending_indian_stock_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "indian_stock_api",
     "domain": "indian_markets",
     "dataset": "trending",
@@ -193,7 +193,7 @@
   },
   "nse_most_active_indian_stock_api": {
     "dag_id": "nse_most_active_indian_stock_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "indian_stock_api",
     "domain": "indian_markets",
     "dataset": "nse_most_active",
@@ -206,7 +206,7 @@
   },
   "price_shockers_indian_stock_api": {
     "dag_id": "price_shockers_indian_stock_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "indian_stock_api",
     "domain": "indian_markets",
     "dataset": "price_shockers",
@@ -219,7 +219,7 @@
   },
   "52_week_hld_indian_stock_api": {
     "dag_id": "52_week_hld_indian_stock_api_dag",
-    "schedule": "*/25 * * * *",
+    "schedule": "@daily",
     "source": "indian_stock_api",
     "domain": "indian_markets",
     "dataset": "52_week_high_low_data",
