@@ -1,0 +1,139 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 1352.800048828125,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 0,
+            "y": 14
+          },
+          "nodeIndex": "american_markets_alphavantage_time_series_daily_fact",
+          "nodeLineageTag": "395332ee-710b-4bcf-b1f0-b2161d6ac728",
+          "size": {
+            "height": 272,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 284,
+            "y": 0
+          },
+          "nodeIndex": "american_markets_alphavantage_time_series_daily_metrics",
+          "nodeLineageTag": "c3f12aa8-de36-4c9c-a888-46a3ca69f221",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 568,
+            "y": 26
+          },
+          "nodeIndex": "commodities_alphavantage_commodity_prices_fact",
+          "nodeLineageTag": "032b03a9-4ef3-469d-811f-9f5709d938e9",
+          "size": {
+            "height": 248,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 852,
+            "y": 26
+          },
+          "nodeIndex": "commodities_metals_dev_spot_prices_fact",
+          "nodeLineageTag": "da3bfe73-afbb-4e49-88ba-7db8278448bc",
+          "size": {
+            "height": 248,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1136,
+            "y": 0
+          },
+          "nodeIndex": "commodities_twelvedata_exchange_rates_fact",
+          "nodeLineageTag": "7a71944f-0255-47c7-aa31-bcecb64dffaa",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1420,
+            "y": 50
+          },
+          "nodeIndex": "macroeconomics_imf_indicators_fact",
+          "nodeLineageTag": "0cbdd084-3afc-45e0-a7f2-6da511112b3d",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1704,
+            "y": 26
+          },
+          "nodeIndex": "macroeconomics_imf_indicators_scores",
+          "nodeLineageTag": "e9debb8a-1425-4373-b50d-d538a3a0abd0",
+          "size": {
+            "height": 248,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1988,
+            "y": 62
+          },
+          "nodeIndex": "macroeconomics_imf_indicators_tvi",
+          "nodeLineageTag": "5400de70-b52b-4431-b4d6-b33dad63b970",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2272,
+            "y": 0
+          },
+          "nodeIndex": "newsapi_articles_raw",
+          "nodeLineageTag": "e76e9218-cca3-4da8-a3d7-73da3be39b8d",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 100,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

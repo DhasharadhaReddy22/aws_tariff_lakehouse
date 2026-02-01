@@ -1,0 +1,56 @@
+table macroeconomics_imf_indicators_tvi
+	lineageTag: 5400de70-b52b-4431-b4d6-b33dad63b970
+
+	column country
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: ea79b335-fb72-41ac-b61b-131b6994803d
+		summarizeBy: none
+		sourceColumn: country
+
+		annotation SummarizationSetBy = Automatic
+
+	column year
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 9dd1e9fe-9a4a-4fa2-8d3e-bdfd87225edb
+		summarizeBy: sum
+		sourceColumn: year
+
+		annotation SummarizationSetBy = Automatic
+
+	column tvi_score
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 509a4453-e972-48a9-b0cb-004d5820f9dc
+		summarizeBy: sum
+		sourceColumn: tvi_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column processed_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: 708bae6c-cd27-4a09-935c-4ac2e0b74f06
+		summarizeBy: none
+		sourceColumn: processed_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition macroeconomics_imf_indicators_tvi = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    gold_Schema = AwsDataCatalog_Database{[Name="gold",Kind="Schema"]}[Data],
+				    macroeconomics_imf_indicators_tvi_Table = gold_Schema{[Name="macroeconomics_imf_indicators_tvi",Kind="Table"]}[Data]
+				in
+				    macroeconomics_imf_indicators_tvi_Table
+
+	annotation PBI_ResultType = Table
+

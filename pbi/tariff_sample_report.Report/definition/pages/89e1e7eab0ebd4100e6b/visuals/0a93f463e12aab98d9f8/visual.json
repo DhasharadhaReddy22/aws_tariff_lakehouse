@@ -1,0 +1,266 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "0a93f463e12aab98d9f8",
+  "position": {
+    "x": 0,
+    "y": 348.50728445187485,
+    "z": 1,
+    "height": 371.74110341533316,
+    "width": 420.65440649629807,
+    "tabOrder": 1
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "commodities_twelvedata_exchange_rates_fact"
+                    }
+                  },
+                  "Property": "market_time"
+                }
+              },
+              "queryRef": "commodities_twelvedata_exchange_rates_fact.market_time",
+              "nativeQueryRef": "Trade Date",
+              "active": true,
+              "displayName": "Trade Date"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_twelvedata_exchange_rates_fact"
+                        }
+                      },
+                      "Property": "close"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(commodities_twelvedata_exchange_rates_fact.close)",
+              "nativeQueryRef": "Close",
+              "displayName": "Close"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_twelvedata_exchange_rates_fact"
+                        }
+                      },
+                      "Property": "high"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(commodities_twelvedata_exchange_rates_fact.high)",
+              "nativeQueryRef": "High",
+              "displayName": "High"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_twelvedata_exchange_rates_fact"
+                        }
+                      },
+                      "Property": "low"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(commodities_twelvedata_exchange_rates_fact.low)",
+              "nativeQueryRef": "Low",
+              "displayName": "Low"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "market_time"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Trend of Exchange Rates (USD/INR)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "dd33ba9a1fe24587d8ae",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "commodities_twelvedata_exchange_rates_fact"
+              }
+            },
+            "Property": "market_time"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "78b07c358ce0adbca82e",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "close"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "5b174a0984c22365c80a",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "high"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "2dcf09b2bc023978703f",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "low"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b651913f5b28987847e0",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "commodities_twelvedata_exchange_rates_fact"
+              }
+            },
+            "Property": "symbol"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "commodities_twelvedata_exchange_rates_fact",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "c"
+                          }
+                        },
+                        "Property": "symbol"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'USD/INR'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
+  }
+}

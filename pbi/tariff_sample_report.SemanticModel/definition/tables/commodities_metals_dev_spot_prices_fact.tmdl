@@ -1,0 +1,81 @@
+table commodities_metals_dev_spot_prices_fact
+	lineageTag: da3bfe73-afbb-4e49-88ba-7db8278448bc
+
+	column metal
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: e9c9153e-a966-4f8a-a241-c10cbe84d22e
+		summarizeBy: none
+		sourceColumn: metal
+
+		annotation SummarizationSetBy = Automatic
+
+	column market_time
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: b4d00460-2c80-49ea-93e1-1017920c80a8
+		summarizeBy: none
+		sourceColumn: market_time
+
+		annotation SummarizationSetBy = Automatic
+
+	column year_month
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 0e498691-64ba-44ee-afeb-3784a89852fd
+		summarizeBy: none
+		sourceColumn: year_month
+
+		annotation SummarizationSetBy = Automatic
+
+	column rate
+		dataType: double
+		sourceProviderType: double
+		lineageTag: b1b13583-d40f-4874-a7f1-af0dc492f90d
+		summarizeBy: sum
+		sourceColumn: rate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column currency
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 44546d75-933e-4a31-adfd-198e50b3e80c
+		summarizeBy: none
+		sourceColumn: currency
+
+		annotation SummarizationSetBy = Automatic
+
+	column unit
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 06db1b3c-ae7f-4a07-82de-b203384eb580
+		summarizeBy: none
+		sourceColumn: unit
+
+		annotation SummarizationSetBy = Automatic
+
+	column processed_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: ca9adc04-18ab-44be-9b91-1078fc7b8bdc
+		summarizeBy: none
+		sourceColumn: processed_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition commodities_metals_dev_spot_prices_fact = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    gold_Schema = AwsDataCatalog_Database{[Name="gold",Kind="Schema"]}[Data],
+				    commodities_metals_dev_spot_prices_fact_Table = gold_Schema{[Name="commodities_metals_dev_spot_prices_fact",Kind="Table"]}[Data]
+				in
+				    commodities_metals_dev_spot_prices_fact_Table
+

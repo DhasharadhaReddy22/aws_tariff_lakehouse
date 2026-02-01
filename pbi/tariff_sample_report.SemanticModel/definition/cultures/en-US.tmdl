@@ -1,0 +1,158 @@
+cultureInfo en-US
+
+	linguisticMetadata =
+			{
+			  "Version": "2.0.0",
+			  "Language": "en-US",
+			  "Entities": {
+			    "commodities_alphavantage_commodity_prices_fact.trade_date": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "commodities_alphavantage_commodity_prices_fact",
+			          "ConceptualProperty": "trade_date"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Trade Date": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "commodities_alphavantage_commodity_prices_fact.symbol": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "commodities_alphavantage_commodity_prices_fact",
+			          "ConceptualProperty": "symbol"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Symbol": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "commodities_twelvedata_exchange_rates_fact.market_time": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "commodities_twelvedata_exchange_rates_fact",
+			          "ConceptualProperty": "market_time"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Trade Date": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "newsapi_articles_raw.source_news": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "newsapi_articles_raw",
+			          "ConceptualProperty": "source_news"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Source": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "newsapi_articles_raw.title": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "newsapi_articles_raw",
+			          "ConceptualProperty": "title"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Title": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "newsapi_articles_raw.author": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "newsapi_articles_raw",
+			          "ConceptualProperty": "author"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Author": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "macroeconomics_imf_indicators_tvi.country": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "macroeconomics_imf_indicators_tvi",
+			          "ConceptualProperty": "country"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Country": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    }
+			  }
+			}
+		contentType: json
+

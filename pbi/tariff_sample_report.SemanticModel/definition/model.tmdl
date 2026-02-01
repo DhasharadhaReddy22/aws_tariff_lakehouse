@@ -1,0 +1,26 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-IN
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["newsapi_articles_raw","american_markets_alphavantage_time_series_daily_fact","american_markets_alphavantage_time_series_daily_metrics","commodities_alphavantage_commodity_prices_fact","commodities_metals_dev_spot_prices_fact","commodities_twelvedata_exchange_rates_fact","macroeconomics_imf_indicators_fact","macroeconomics_imf_indicators_scores","macroeconomics_imf_indicators_tvi"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table newsapi_articles_raw
+ref table american_markets_alphavantage_time_series_daily_fact
+ref table american_markets_alphavantage_time_series_daily_metrics
+ref table commodities_alphavantage_commodity_prices_fact
+ref table commodities_metals_dev_spot_prices_fact
+ref table commodities_twelvedata_exchange_rates_fact
+ref table macroeconomics_imf_indicators_fact
+ref table macroeconomics_imf_indicators_scores
+ref table macroeconomics_imf_indicators_tvi
+
+ref cultureInfo en-US
+

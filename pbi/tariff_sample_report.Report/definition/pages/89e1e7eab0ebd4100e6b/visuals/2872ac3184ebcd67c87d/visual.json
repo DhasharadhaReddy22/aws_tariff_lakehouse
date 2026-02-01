@@ -1,0 +1,210 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "2872ac3184ebcd67c87d",
+  "position": {
+    "x": 835.19465010747558,
+    "y": 348.50728445187485,
+    "z": 2,
+    "height": 371.74110341533316,
+    "width": 443.88822545975643,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "commodities_alphavantage_commodity_prices_fact"
+                    }
+                  },
+                  "Property": "trade_date"
+                }
+              },
+              "queryRef": "commodities_alphavantage_commodity_prices_fact.trade_date",
+              "nativeQueryRef": "Trade Date",
+              "active": true,
+              "displayName": "Trade Date"
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "commodities_alphavantage_commodity_prices_fact"
+                    }
+                  },
+                  "Property": "symbol"
+                }
+              },
+              "queryRef": "commodities_alphavantage_commodity_prices_fact.symbol",
+              "nativeQueryRef": "Symbol",
+              "displayName": "Symbol"
+            }
+          ]
+        },
+        "Tooltips": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_alphavantage_commodity_prices_fact"
+                        }
+                      },
+                      "Property": "unit"
+                    }
+                  },
+                  "Function": 3
+                }
+              },
+              "queryRef": "Min(commodities_alphavantage_commodity_prices_fact.unit)",
+              "nativeQueryRef": "Unit",
+              "displayName": "Unit"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_alphavantage_commodity_prices_fact"
+                        }
+                      },
+                      "Property": "value"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(commodities_alphavantage_commodity_prices_fact.value)",
+              "nativeQueryRef": "Price",
+              "displayName": "Price"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_alphavantage_commodity_prices_fact"
+                  }
+                },
+                "Property": "trade_date"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Trend of Energy Prices'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "20b6fc38f3cd54cfba4b",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "commodities_alphavantage_commodity_prices_fact"
+              }
+            },
+            "Property": "trade_date"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "361a75924b2fd0c59c7f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "commodities_alphavantage_commodity_prices_fact"
+              }
+            },
+            "Property": "symbol"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "d00a47ed5382afa95b20",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_alphavantage_commodity_prices_fact"
+                  }
+                },
+                "Property": "unit"
+              }
+            },
+            "Function": 3
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "0aa6984b32b4690864f0",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_alphavantage_commodity_prices_fact"
+                  }
+                },
+                "Property": "value"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
+}

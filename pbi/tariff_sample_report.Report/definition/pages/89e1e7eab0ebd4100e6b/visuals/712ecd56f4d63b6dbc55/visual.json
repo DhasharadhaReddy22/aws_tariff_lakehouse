@@ -1,0 +1,266 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "712ecd56f4d63b6dbc55",
+  "position": {
+    "x": 414.40962160170187,
+    "y": 348.54319167825258,
+    "z": 5,
+    "height": 371.87088560947421,
+    "width": 421.2707080520612,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "commodities_twelvedata_exchange_rates_fact"
+                    }
+                  },
+                  "Property": "market_time"
+                }
+              },
+              "queryRef": "commodities_twelvedata_exchange_rates_fact.market_time",
+              "nativeQueryRef": "Trade Date",
+              "active": true,
+              "displayName": "Trade Date"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_twelvedata_exchange_rates_fact"
+                        }
+                      },
+                      "Property": "close"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(commodities_twelvedata_exchange_rates_fact.close)",
+              "nativeQueryRef": "Close",
+              "displayName": "Close"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_twelvedata_exchange_rates_fact"
+                        }
+                      },
+                      "Property": "high"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(commodities_twelvedata_exchange_rates_fact.high)",
+              "nativeQueryRef": "High",
+              "displayName": "High"
+            },
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "commodities_twelvedata_exchange_rates_fact"
+                        }
+                      },
+                      "Property": "low"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(commodities_twelvedata_exchange_rates_fact.low)",
+              "nativeQueryRef": "Low",
+              "displayName": "Low"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "market_time"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Trend of Gold Price (XAU/USD)'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "b651913f5b28987847e0",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "commodities_twelvedata_exchange_rates_fact"
+              }
+            },
+            "Property": "symbol"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "commodities_twelvedata_exchange_rates_fact",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "c"
+                          }
+                        },
+                        "Property": "symbol"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'XAU/USD'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      },
+      {
+        "name": "8ecc9604f7d209606397",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "commodities_twelvedata_exchange_rates_fact"
+              }
+            },
+            "Property": "market_time"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "6aeb89c6508faadfdbfd",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "close"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b4933f60711728460547",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "high"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "45f3e636fd88920e1999",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "commodities_twelvedata_exchange_rates_fact"
+                  }
+                },
+                "Property": "low"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
+}

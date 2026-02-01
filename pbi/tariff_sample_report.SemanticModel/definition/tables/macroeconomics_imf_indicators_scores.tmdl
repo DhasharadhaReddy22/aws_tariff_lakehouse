@@ -1,0 +1,87 @@
+table macroeconomics_imf_indicators_scores
+	lineageTag: e9debb8a-1425-4373-b50d-d538a3a0abd0
+
+	column country
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 815b751b-d1fb-4f01-aacc-f71c70f42b37
+		summarizeBy: none
+		sourceColumn: country
+
+		annotation SummarizationSetBy = Automatic
+
+	column year
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: e9663fd6-fa1e-4f35-8d34-99866bb5acdb
+		summarizeBy: sum
+		sourceColumn: year
+
+		annotation SummarizationSetBy = Automatic
+
+	column trade_exposure_score
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 57738c24-39e4-42b4-8831-12003adde2b5
+		summarizeBy: sum
+		sourceColumn: trade_exposure_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column competitiveness_score
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 536145a0-0241-4148-8275-602afd6502fc
+		summarizeBy: sum
+		sourceColumn: competitiveness_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column macro_resilience_score
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 83588123-a54e-4fe5-8df0-953538c358ba
+		summarizeBy: sum
+		sourceColumn: macro_resilience_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column financial_sensitivity_score
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 3bb72fc5-2bfc-445c-b97e-69103512d179
+		summarizeBy: sum
+		sourceColumn: financial_sensitivity_score
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column processed_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: a3037197-4baa-4e87-a34b-3bafe50235b6
+		summarizeBy: none
+		sourceColumn: processed_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition macroeconomics_imf_indicators_scores = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    gold_Schema = AwsDataCatalog_Database{[Name="gold",Kind="Schema"]}[Data],
+				    macroeconomics_imf_indicators_scores_Table = gold_Schema{[Name="macroeconomics_imf_indicators_scores",Kind="Table"]}[Data]
+				in
+				    macroeconomics_imf_indicators_scores_Table
+

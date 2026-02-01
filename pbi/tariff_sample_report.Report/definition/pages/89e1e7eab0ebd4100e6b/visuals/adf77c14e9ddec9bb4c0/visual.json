@@ -1,0 +1,256 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "adf77c14e9ddec9bb4c0",
+  "position": {
+    "x": 0,
+    "y": 68.478624313350849,
+    "z": 4,
+    "height": 280.028660138524,
+    "width": 420.65440649629807,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "macroeconomics_imf_indicators_tvi"
+                    }
+                  },
+                  "Property": "year"
+                }
+              },
+              "queryRef": "macroeconomics_imf_indicators_tvi.year",
+              "nativeQueryRef": "year",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "macroeconomics_imf_indicators_tvi"
+                    }
+                  },
+                  "Property": "country"
+                }
+              },
+              "queryRef": "macroeconomics_imf_indicators_tvi.country",
+              "nativeQueryRef": "Country",
+              "displayName": "Country"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "macroeconomics_imf_indicators_tvi"
+                        }
+                      },
+                      "Property": "tvi_score"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(macroeconomics_imf_indicators_tvi.tvi_score)",
+              "nativeQueryRef": "Sum of tvi_score"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Aggregation": {
+                "Expression": {
+                  "Column": {
+                    "Expression": {
+                      "SourceRef": {
+                        "Entity": "macroeconomics_imf_indicators_tvi"
+                      }
+                    },
+                    "Property": "tvi_score"
+                  }
+                },
+                "Function": 0
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "objects": {
+      "categoryAxis": [
+        {
+          "properties": {
+            "titleText": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Year'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "titleText": {
+              "expr": {
+                "Literal": {
+                  "Value": "'TVI Score'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Trade Vulnerability Index'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "8ddc50266cf332b7d809",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "macroeconomics_imf_indicators_tvi"
+              }
+            },
+            "Property": "country"
+          }
+        },
+        "type": "Advanced",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "m",
+              "Entity": "macroeconomics_imf_indicators_tvi",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Or": {
+                  "Left": {
+                    "Comparison": {
+                      "ComparisonKind": 0,
+                      "Left": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "m"
+                            }
+                          },
+                          "Property": "country"
+                        }
+                      },
+                      "Right": {
+                        "Literal": {
+                          "Value": "'IND'"
+                        }
+                      }
+                    }
+                  },
+                  "Right": {
+                    "Comparison": {
+                      "ComparisonKind": 0,
+                      "Left": {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "m"
+                            }
+                          },
+                          "Property": "country"
+                        }
+                      },
+                      "Right": {
+                        "Literal": {
+                          "Value": "'USA'"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "a831d48903893724af15",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "macroeconomics_imf_indicators_tvi"
+                  }
+                },
+                "Property": "tvi_score"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "b0367025dda839de1d3c",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "macroeconomics_imf_indicators_tvi"
+              }
+            },
+            "Property": "year"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
+}

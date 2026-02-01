@@ -1,0 +1,146 @@
+table newsapi_articles_raw
+	lineageTag: e76e9218-cca3-4da8-a3d7-73da3be39b8d
+
+	column article_url
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: e60ad292-dd01-46d2-b875-160df12ac7f7
+		summarizeBy: none
+		sourceColumn: article_url
+
+		annotation SummarizationSetBy = Automatic
+
+	column title
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 999b1397-d075-41eb-b897-d0bfacbe3841
+		summarizeBy: none
+		sourceColumn: title
+
+		annotation SummarizationSetBy = Automatic
+
+	column author
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: e444e2e6-6a4c-47a9-8951-b0f9a917a1bc
+		summarizeBy: none
+		sourceColumn: author
+
+		annotation SummarizationSetBy = Automatic
+
+	column source_news
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: f93c88a5-d2f0-4558-9c2f-68fff991d277
+		summarizeBy: none
+		sourceColumn: source_news
+
+		annotation SummarizationSetBy = Automatic
+
+	column source_id
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 81dc83ad-2139-48ae-8df6-b6abd0e5fe57
+		summarizeBy: none
+		sourceColumn: source_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column description
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 31db488a-cf8d-4bb2-a78b-087a4ead0622
+		summarizeBy: none
+		sourceColumn: description
+
+		annotation SummarizationSetBy = Automatic
+
+	column published_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: c08091cb-c5dc-42c5-a831-b168a1f9020b
+		summarizeBy: none
+		sourceColumn: published_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column source_api
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 1ef8fff0-d7e4-4942-9bf1-342ca255cb0d
+		summarizeBy: none
+		sourceColumn: source_api
+
+		annotation SummarizationSetBy = Automatic
+
+	column request_url
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: a82b7ea4-8be8-4dfe-8d9e-bd843e1e8c3c
+		summarizeBy: none
+		sourceColumn: request_url
+
+		annotation SummarizationSetBy = Automatic
+
+	column received_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: 04bd0ee5-5477-4f97-8e93-d86f1ac5dc71
+		summarizeBy: none
+		sourceColumn: received_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column ingested_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: 06091597-e05c-4238-8f76-ffcf716e456b
+		summarizeBy: none
+		sourceColumn: ingested_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column source
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: c7e4db05-5cb3-4f07-be8e-9d199b789c33
+		summarizeBy: none
+		sourceColumn: source
+
+		annotation SummarizationSetBy = Automatic
+
+	column dataset
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 5e829df6-9017-4280-9aa9-8ad27f0f23eb
+		summarizeBy: none
+		sourceColumn: dataset
+
+		annotation SummarizationSetBy = Automatic
+
+	column ingestion_date
+		dataType: dateTime
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: 145bb665-006b-41be-a044-83a5538a7c21
+		summarizeBy: none
+		sourceColumn: ingestion_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition newsapi_articles_raw = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    bronze_Schema = AwsDataCatalog_Database{[Name="bronze",Kind="Schema"]}[Data],
+				    newsapi_articles_raw_Table = bronze_Schema{[Name="newsapi_articles_raw",Kind="Table"]}[Data]
+				in
+				    newsapi_articles_raw_Table
+

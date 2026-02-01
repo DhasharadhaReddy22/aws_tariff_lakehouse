@@ -1,0 +1,83 @@
+table commodities_alphavantage_commodity_prices_fact
+	lineageTag: 032b03a9-4ef3-469d-811f-9f5709d938e9
+
+	column commodity
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 42607eb8-1e45-4240-bb21-9657bc2e9825
+		summarizeBy: none
+		sourceColumn: commodity
+
+		annotation SummarizationSetBy = Automatic
+
+	column symbol
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 4b6a515d-a49f-4a53-8a38-a86df5f47d0e
+		summarizeBy: none
+		sourceColumn: symbol
+
+		annotation SummarizationSetBy = Automatic
+
+	column interval
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: c7268752-1d31-470a-938f-2c0eb9c2d045
+		summarizeBy: none
+		sourceColumn: interval
+
+		annotation SummarizationSetBy = Automatic
+
+	column trade_date
+		dataType: dateTime
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: 185dbb45-5282-4afa-99fe-e5b14937eb76
+		summarizeBy: none
+		sourceColumn: trade_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column value
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 702f56fb-75ad-449d-b331-5d73cb66d16d
+		summarizeBy: sum
+		sourceColumn: value
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column unit
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: a6752fa7-39b6-4b33-b2f4-f24fe04f6d06
+		summarizeBy: none
+		sourceColumn: unit
+
+		annotation SummarizationSetBy = Automatic
+
+	column processed_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: 2b1b9069-8dfb-4a43-aec9-b5e84c4deaf5
+		summarizeBy: none
+		sourceColumn: processed_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition commodities_alphavantage_commodity_prices_fact = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    gold_Schema = AwsDataCatalog_Database{[Name="gold",Kind="Schema"]}[Data],
+				    commodities_alphavantage_commodity_prices_fact_Table = gold_Schema{[Name="commodities_alphavantage_commodity_prices_fact",Kind="Table"]}[Data]
+				in
+				    commodities_alphavantage_commodity_prices_fact_Table
+

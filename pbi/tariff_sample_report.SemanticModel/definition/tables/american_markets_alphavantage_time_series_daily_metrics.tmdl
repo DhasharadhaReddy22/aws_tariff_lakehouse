@@ -1,0 +1,143 @@
+table american_markets_alphavantage_time_series_daily_metrics
+	lineageTag: c3f12aa8-de36-4c9c-a888-46a3ca69f221
+
+	column symbol
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: d755b0fc-8327-4522-af8b-e145edeb01a1
+		summarizeBy: none
+		sourceColumn: symbol
+
+		annotation SummarizationSetBy = Automatic
+
+	column trade_date
+		dataType: dateTime
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: dcb6b441-cc48-4f5b-a557-7b40f3f90383
+		summarizeBy: none
+		sourceColumn: trade_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column open
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 7c33035d-9116-49e5-9404-ef158b441f40
+		summarizeBy: sum
+		sourceColumn: open
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column high
+		dataType: double
+		sourceProviderType: double
+		lineageTag: be4898a7-9671-4940-aa6a-5e00f9a1f50a
+		summarizeBy: sum
+		sourceColumn: high
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column low
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 8b8c11bc-aeab-49b0-9309-61ef17a7b08a
+		summarizeBy: sum
+		sourceColumn: low
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column close
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 4a5e8b05-e448-4610-974d-c1d22440e62e
+		summarizeBy: sum
+		sourceColumn: close
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column volume
+		dataType: int64
+		formatString: 0
+		sourceProviderType: bigint
+		lineageTag: 16557af2-5357-4cd0-af7d-4d75d3ac8648
+		summarizeBy: sum
+		sourceColumn: volume
+
+		annotation SummarizationSetBy = Automatic
+
+	column processed_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: d7d2f64c-20de-421e-8cb3-9a6aad700ad9
+		summarizeBy: none
+		sourceColumn: processed_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column daily_return
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 8026442b-11f1-44e9-ae5a-7e7260cc6a3f
+		summarizeBy: sum
+		sourceColumn: daily_return
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ma_5_close
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 6ab6e4e8-109d-463b-8f94-597ecaa42316
+		summarizeBy: sum
+		sourceColumn: ma_5_close
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column ma_20_close
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 00fb8446-76dd-40cb-a5d6-dee6604ef76e
+		summarizeBy: sum
+		sourceColumn: ma_20_close
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column volatility_20
+		dataType: double
+		sourceProviderType: double
+		lineageTag: ffb72aeb-c893-4322-8ccc-eae87abd877c
+		summarizeBy: sum
+		sourceColumn: volatility_20
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition american_markets_alphavantage_time_series_daily_metrics = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    gold_Schema = AwsDataCatalog_Database{[Name="gold",Kind="Schema"]}[Data],
+				    american_markets_alphavantage_time_series_daily_metrics_Table = gold_Schema{[Name="american_markets_alphavantage_time_series_daily_metrics",Kind="Table"]}[Data]
+				in
+				    american_markets_alphavantage_time_series_daily_metrics_Table
+

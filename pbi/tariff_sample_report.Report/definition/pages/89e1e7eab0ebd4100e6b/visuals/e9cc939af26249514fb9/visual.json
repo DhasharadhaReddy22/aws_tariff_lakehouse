@@ -1,0 +1,273 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "e9cc939af26249514fb9",
+  "position": {
+    "x": 420.65440649629807,
+    "y": 68.478624313350849,
+    "z": 0,
+    "height": 280.028660138524,
+    "width": 858.42846907093383,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "newsapi_articles_raw"
+                    }
+                  },
+                  "Property": "source_news"
+                }
+              },
+              "queryRef": "newsapi_articles_raw.source_news",
+              "nativeQueryRef": "Source",
+              "displayName": "Source"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "newsapi_articles_raw"
+                    }
+                  },
+                  "Property": "title"
+                }
+              },
+              "queryRef": "newsapi_articles_raw.title",
+              "nativeQueryRef": "Title",
+              "displayName": "Title"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "newsapi_articles_raw"
+                    }
+                  },
+                  "Property": "author"
+                }
+              },
+              "queryRef": "newsapi_articles_raw.author",
+              "nativeQueryRef": "Author",
+              "displayName": "Author"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "newsapi_articles_raw"
+                  }
+                },
+                "Property": "source_news"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
+      }
+    },
+    "objects": {
+      "columnWidth": [
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "549.3192163769257D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "newsapi_articles_raw.title"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "169.6948831729228D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "newsapi_articles_raw.author"
+          }
+        }
+      ],
+      "values": [
+        {
+          "properties": {
+            "webURL": {
+              "expr": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "newsapi_articles_raw"
+                        }
+                      },
+                      "Property": "article_url"
+                    }
+                  },
+                  "Function": 3
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "newsapi_articles_raw.title"
+          }
+        }
+      ],
+      "total": [
+        {
+          "properties": {
+            "totals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "columnHeaders": [
+        {
+          "properties": {
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Center'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'wf_standard-font, helvetica, arial, sans-serif'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'News'"
+                }
+              }
+            },
+            "alignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'center'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "4fd4793f1bc80c3b2a84",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "newsapi_articles_raw"
+              }
+            },
+            "Property": "source_news"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "e78ad622aa6258014b8d",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "newsapi_articles_raw"
+              }
+            },
+            "Property": "title"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "3055d605d9ee37e406c8",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "newsapi_articles_raw"
+              }
+            },
+            "Property": "author"
+          }
+        },
+        "type": "Categorical"
+      }
+    ]
+  }
+}

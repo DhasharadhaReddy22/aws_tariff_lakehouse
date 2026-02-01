@@ -1,0 +1,99 @@
+table american_markets_alphavantage_time_series_daily_fact
+	lineageTag: 395332ee-710b-4bcf-b1f0-b2161d6ac728
+
+	column symbol
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 79ae43be-2363-454c-a5b4-c01472043296
+		summarizeBy: none
+		sourceColumn: symbol
+
+		annotation SummarizationSetBy = Automatic
+
+	column trade_date
+		dataType: dateTime
+		formatString: Long Date
+		sourceProviderType: date
+		lineageTag: c0afa202-4e9b-4c78-8021-7f06f412ac9c
+		summarizeBy: none
+		sourceColumn: trade_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column open
+		dataType: double
+		sourceProviderType: double
+		lineageTag: a33421b1-c756-4884-993a-fb4c17587190
+		summarizeBy: sum
+		sourceColumn: open
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column high
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 4c28b62e-f132-4222-83ed-47f4a1e42599
+		summarizeBy: sum
+		sourceColumn: high
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column low
+		dataType: double
+		sourceProviderType: double
+		lineageTag: bcae8820-8831-4bef-874b-58134da92d44
+		summarizeBy: sum
+		sourceColumn: low
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column close
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 5069b7ed-c30b-40ae-98c5-db1f5dee1927
+		summarizeBy: sum
+		sourceColumn: close
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column volume
+		dataType: int64
+		formatString: 0
+		sourceProviderType: bigint
+		lineageTag: bdf1fdaa-6026-4349-870d-9a6c672b769f
+		summarizeBy: sum
+		sourceColumn: volume
+
+		annotation SummarizationSetBy = Automatic
+
+	column processed_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: 35a06e7e-cc6e-4b70-8c14-88d611a8d028
+		summarizeBy: none
+		sourceColumn: processed_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition american_markets_alphavantage_time_series_daily_fact = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    gold_Schema = AwsDataCatalog_Database{[Name="gold",Kind="Schema"]}[Data],
+				    american_markets_alphavantage_time_series_daily_fact_Table = gold_Schema{[Name="american_markets_alphavantage_time_series_daily_fact",Kind="Table"]}[Data]
+				in
+				    american_markets_alphavantage_time_series_daily_fact_Table
+

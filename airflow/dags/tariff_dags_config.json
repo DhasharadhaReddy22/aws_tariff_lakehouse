@@ -74,7 +74,7 @@
     "glue_job": "tariff_twelvedata_glue_job",
     "tags": ["tariff", "twelvedata", "exchange_rates"],
     "api_params": {
-      "symbols" : ["USD/INR"],
+      "symbols" : ["XAU/USD", "USD/INR"],
       "params" : {
           "interval": "1day",
           "dp": 4,

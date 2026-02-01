@@ -1,0 +1,123 @@
+table commodities_twelvedata_exchange_rates_fact
+	lineageTag: 7a71944f-0255-47c7-aa31-bcecb64dffaa
+
+	column symbol
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 1be9c955-0d51-4f56-957b-df140f35d0fe
+		summarizeBy: none
+		sourceColumn: symbol
+
+		annotation SummarizationSetBy = Automatic
+
+	column interval
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: fa08af05-99ea-4fba-9667-aa105b215fc5
+		summarizeBy: none
+		sourceColumn: interval
+
+		annotation SummarizationSetBy = Automatic
+
+	column currency_base
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 4e8314df-e880-47f6-93b3-c1eed9124ddb
+		summarizeBy: none
+		sourceColumn: currency_base
+
+		annotation SummarizationSetBy = Automatic
+
+	column currency_quote
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 36aded3a-e388-4a4a-a85c-fc21fa2a0ad9
+		summarizeBy: none
+		sourceColumn: currency_quote
+
+		annotation SummarizationSetBy = Automatic
+
+	column market_time
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: 50c58ba6-79fc-49f7-b9b2-239408fd0ee6
+		summarizeBy: none
+		sourceColumn: market_time
+
+		annotation SummarizationSetBy = Automatic
+
+	column year_month
+		dataType: string
+		sourceProviderType: nvarchar(255)
+		lineageTag: 7f32b24d-07d3-4b78-88c1-57d824994d52
+		summarizeBy: none
+		sourceColumn: year_month
+
+		annotation SummarizationSetBy = Automatic
+
+	column open
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 27608727-8eb8-41c3-9946-3790a3b1b971
+		summarizeBy: sum
+		sourceColumn: open
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column high
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 2fac540e-ddc5-48c5-b730-d704f79c9aee
+		summarizeBy: sum
+		sourceColumn: high
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column low
+		dataType: double
+		sourceProviderType: double
+		lineageTag: cdcc50bc-e798-406c-950d-440757b9d92f
+		summarizeBy: sum
+		sourceColumn: low
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column close
+		dataType: double
+		sourceProviderType: double
+		lineageTag: 8df0d6ba-cd82-4004-aad1-c1b6ad58e5ed
+		summarizeBy: sum
+		sourceColumn: close
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column processed_at
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: e2a7d299-6c2a-4979-896e-36bf8c91cbf1
+		summarizeBy: none
+		sourceColumn: processed_at
+
+		annotation SummarizationSetBy = Automatic
+
+	partition commodities_twelvedata_exchange_rates_fact = m
+		mode: directQuery
+		source =
+				let
+				    Source = AmazonAthena.Databases("Athena_Tariff_Bronze", "us-east-1", []),
+				    AwsDataCatalog_Database = Source{[Name="AwsDataCatalog",Kind="Database"]}[Data],
+				    gold_Schema = AwsDataCatalog_Database{[Name="gold",Kind="Schema"]}[Data],
+				    commodities_twelvedata_exchange_rates_fact_Table = gold_Schema{[Name="commodities_twelvedata_exchange_rates_fact",Kind="Table"]}[Data]
+				in
+				    commodities_twelvedata_exchange_rates_fact_Table
+

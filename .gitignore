@@ -210,6 +210,16 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Power BI
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+**/.pbi/
+*.pbix
+**/*.pbix
+.DS_Store
+Thumbs.db
+
+# Custom ignores for this project
 logs/
 service_logs/
 medium.md
