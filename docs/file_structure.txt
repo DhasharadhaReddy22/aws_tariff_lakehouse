@@ -1,0 +1,121 @@
+.
+├── DataContracts.md
+├── README.md
+├── airflow
+│   ├── dags
+│   │   ├── tariff_dags_config.json
+│   │   └── tariff_dynamic_dag.py
+│   ├── logs
+│   └── utils
+│       └── create_aws_conn.py
+├── athena
+│   └── create_newsapi_raw.sql
+├── copy.env
+├── docker-compose.yml
+├── glue
+│   ├── Dockerfile.livy_jupyter
+│   ├── notebooks
+│   │   └── glue_local_ex.ipynb
+│   └── scripts
+│       ├── logs
+│       │   ├── alphavanatge_commodities_spark_log.log
+│       │   ├── spark_log.log
+│       │   └── tvi_macroeconomics_spark_log.log
+│       ├── tariff_alphavantage_american_markets_glue_job.py
+│       ├── tariff_alphavantage_commodities_glue_job.py
+│       ├── tariff_imf_datamapper_glue_job.py
+│       ├── tariff_metals_dev_glue_job.py
+│       ├── tariff_twelvedata_glue_job.py
+│       └── test_glue_job.py
+├── lambda
+│   ├── functions
+│   │   ├── lambda_alphavantage
+│   │   │   └── lambda_function.py
+│   │   ├── lambda_financial_modeling_prep
+│   │   │   └── lambda_function.py
+│   │   ├── lambda_imf_datamapper
+│   │   │   └── lambda_function.py
+│   │   ├── lambda_indian_fuel_api
+│   │   │   └── lambda_function.py
+│   │   ├── lambda_indian_stocks_api
+│   │   │   └── lambda_function.py
+│   │   ├── lambda_metals_dev
+│   │   │   └── lambda_function.py
+│   │   ├── lambda_newsapi
+│   │   │   └── lambda_function.py
+│   │   └── lambda_twelve_data
+│   │       └── lambda_function.py
+│   └── layer
+│       ├── python
+│       │   ├── lib
+│       │   │   └── python3.12
+│       │   │       └── site-packages
+│       │   └── src
+│       │       ├── __init__.py
+│       │       ├── ingestion
+│       │       │   ├── alphavantage.py
+│       │       │   ├── financial_modeling_prep.py
+│       │       │   ├── imf_datamapper.py
+│       │       │   ├── indian_fuel_api.py
+│       │       │   ├── indian_stocks_api.py
+│       │       │   ├── ingestion_utils.py
+│       │       │   ├── metals_dev.py
+│       │       │   ├── newsapi.py
+│       │       │   └── twelve_data.py
+│       │       └── utils
+│       │           ├── __init__.py
+│       │           ├── api_client.py
+│       │           ├── bucket_client.py
+│       │           ├── config.py
+│       │           └── logger.py
+│       └── requirements.txt
+├── pbi
+│   ├── tariff_sample_report.Report
+│   │   ├── StaticResources
+│   │   │   └── SharedResources
+│   │   │       └── BaseThemes
+│   │   │           └── CY25SU12.json
+│   │   ├── definition
+│   │   │   ├── pages
+│   │   │   │   ├── 89e1e7eab0ebd4100e6b
+│   │   │   │   │   ├── page.json
+│   │   │   │   │   └── visuals
+│   │   │   │   │       ├── 0a93f463e12aab98d9f8
+│   │   │   │   │       │   └── visual.json
+│   │   │   │   │       ├── 2872ac3184ebcd67c87d
+│   │   │   │   │       │   └── visual.json
+│   │   │   │   │       ├── 4bb8dd235eec452486b3
+│   │   │   │   │       │   └── visual.json
+│   │   │   │   │       ├── 712ecd56f4d63b6dbc55
+│   │   │   │   │       │   └── visual.json
+│   │   │   │   │       ├── adf77c14e9ddec9bb4c0
+│   │   │   │   │       │   └── visual.json
+│   │   │   │   │       └── e9cc939af26249514fb9
+│   │   │   │   │           └── visual.json
+│   │   │   │   └── pages.json
+│   │   │   ├── report.json
+│   │   │   └── version.json
+│   │   └── definition.pbir
+│   ├── tariff_sample_report.SemanticModel
+│   │   ├── definition
+│   │   │   ├── cultures
+│   │   │   │   └── en-US.tmdl
+│   │   │   ├── database.tmdl
+│   │   │   ├── model.tmdl
+│   │   │   └── tables
+│   │   │       ├── american_markets_alphavantage_time_series_daily_fact.tmdl
+│   │   │       ├── american_markets_alphavantage_time_series_daily_metrics.tmdl
+│   │   │       ├── commodities_alphavantage_commodity_prices_fact.tmdl
+│   │   │       ├── commodities_metals_dev_spot_prices_fact.tmdl
+│   │   │       ├── commodities_twelvedata_exchange_rates_fact.tmdl
+│   │   │       ├── macroeconomics_imf_indicators_fact.tmdl
+│   │   │       ├── macroeconomics_imf_indicators_scores.tmdl
+│   │   │       ├── macroeconomics_imf_indicators_tvi.tmdl
+│   │   │       └── newsapi_articles_raw.tmdl
+│   │   ├── definition.pbism
+│   │   └── diagramLayout.json
+│   └── tariff_sample_report.pbip
+├── postgres
+│   └── init.sql
+├── pyproject.toml
+└── uv.lock

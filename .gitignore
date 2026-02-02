@@ -228,7 +228,6 @@ dbt/profiles.yml
 lambda/layer/python/site-packages/*
 lambda/zips/*
 */__pycache__/
-docs
 glue/notebooks/.*
 glue/scripts/.*
 markdowns
