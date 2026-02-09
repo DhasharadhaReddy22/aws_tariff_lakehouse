@@ -9,7 +9,7 @@ This README covers the development and deployment of Lambda functions and layers
 The Lambda architecture follows a **shared layer pattern**:
 
 ```
-lambdas/
+lambda/
 ├── functions/                      # Individual Lambda function handlers
 │   ├── lambda_alphavantage/
 │   ├── lambda_imf_datamapper/
@@ -56,7 +56,7 @@ The Lambda layer contains shared code (`src/`) and dependencies (`lib/`).
 #### 1.1 Install Dependencies
 
 ```bash
-cd lambdas/layer
+cd lambda/layer
 
 # Install dependencies to the Lambda-compatible directory structure
 pip install -r requirements.txt \
@@ -108,7 +108,7 @@ python/
 #### 1.3 Package the Layer
 
 ```bash
-cd lambdas/layer
+cd lambda/layer
 
 # Create layer zip (must include 'python/' directory at root)
 zip -r tariff_lambda_layer.zip python/ -x "*.pyc" -x "*__pycache__*"
@@ -140,7 +140,7 @@ Each Lambda function is a lightweight handler that imports from the shared layer
 Example for `lambda_alphavantage`:
 
 ```bash
-cd lambdas/functions/lambda_alphavantage
+cd lambda/functions/lambda_alphavantage
 
 # Create deployment package (handler only)
 zip lambda_alphavantage.zip lambda_function.py
@@ -148,7 +148,7 @@ zip lambda_alphavantage.zip lambda_function.py
 
 Repeat for all functions:
 ```bash
-cd lambdas/functions
+cd lambda/functions
 
 for func in lambda_*; do
   cd "$func"
@@ -245,7 +245,7 @@ Deploy each function with the shared layer and environment variables.
 **Example**: Deploy `lambda_alphavantage`
 
 ```bash
-cd lambdas/functions/lambda_alphavantage
+cd lambda/functions/lambda_alphavantage
 
 aws lambda create-function \
   --function-name tariff_alphavantage_lambda_function \
@@ -286,7 +286,7 @@ FUNCTIONS=(
   "lambda_newsapi:tariff_newsapi_lambda_function"
 )
 
-cd lambdas/functions
+cd lambda/functions
 
 for entry in "${FUNCTIONS[@]}"; do
   IFS=':' read -r func_dir func_name <<< "$entry"
@@ -401,7 +401,7 @@ aws ssm put-parameter \
 #### 4.1 Update Function Code
 
 ```bash
-cd lambdas/functions/lambda_alphavantage
+cd lambda/functions/lambda_alphavantage
 
 # Re-zip handler
 zip lambda_alphavantage.zip lambda_function.py
@@ -418,7 +418,7 @@ aws lambda update-function-code \
 When you modify shared code or dependencies:
 
 ```bash
-cd lambdas/layer
+cd lambda/layer
 
 # Rebuild layer
 pip install -r requirements.txt \
@@ -611,11 +611,11 @@ aws iam attach-role-policy \
 
 #### CloudWatch Logs
 
-Each function creates a log group: `/aws/lambdas/<function_name>`
+Each function creates a log group: `/aws/lambda/<function_name>`
 
 View logs:
 ```bash
-aws logs tail /aws/lambdas/tariff_alphavantage_lambda_function --follow
+aws logs tail /aws/lambda/tariff_alphavantage_lambda_function --follow
 ```
 
 #### CloudWatch Metrics
