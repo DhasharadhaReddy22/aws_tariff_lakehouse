@@ -119,7 +119,7 @@ Detailed documentation defining the **data contracts** and **integration pattern
 ├── glue/
 │   ├── notebooks/
 │   └── scripts/
-├── lambda/
+├── lambdas/
 │   ├── functions/
 │   └── layer/
 |       └── python/
@@ -188,7 +188,7 @@ A single factory function (`create_tariff_dag`) generates all DAGs by iterating 
 ---
 
 ## Lambda
-Refer to the document linked here [Lambda.md](./lambda/Lambda.md).
+Refer to the document linked here [Lambda.md](./lambdas/Lambda.md).
 
 ---
 
@@ -208,7 +208,7 @@ Key mechanisms:
 - **Airflow-controlled execution windows**
 - **Re-runnable DAGs with no duplicate data**
 
-Refer to the documentation for [Lambda](./lambda/Lambda.md), [Glue](./glue/Glue.md), and [Data Contracts](./DataContracts.md) on how this has been implemented.
+Refer to the documentation for [Lambda](./lambdas/Lambda.md), [Glue](./glue/Glue.md), and [Data Contracts](./DataContracts.md) on how this has been implemented.
 
 ---
 
@@ -258,7 +258,7 @@ This makes S3 behave like a true analytical warehouse.
    ```bash
    docker logs airflow > ./service_logs/airflow.log 2>&1
    ```
-7. Follow the steps in [AWS Lambda Functions and Layer](./lambda/Lambda.md) to setup the required Lambda Layer and Functions to execute the data ingestion.
+7. Follow the steps in [AWS Lambda Functions and Layer](./lambdas/Lambda.md) to setup the required Lambda Layer and Functions to execute the data ingestion.
 8. Follow the steps in [AWS Glue-Spark Jobs](./glue/Glue.md) to setup the required Glue-Spark Script jobs to execute the downstream transforms and create Silver and Gold iceberg tables.
 9. Trigger ingestion DAGs to test the E2E functionality of the pipeline.
 10. Query results using Athena, check [Power BI Visualization](./pbi/Power-BI.md) to setup the Athena as source to query the lakehouse tables.

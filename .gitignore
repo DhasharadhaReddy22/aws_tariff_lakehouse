@@ -221,7 +221,7 @@ Thumbs.db
 
 # Custom ignores for this project
 logs/
-service_logs/
+logs_services/
 medium.md
 api_datasets/
 dbt/profiles.yml
