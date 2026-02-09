@@ -222,11 +222,12 @@ Thumbs.db
 # Custom ignores for this project
 logs/
 service_logs/
+logs_services/
 medium.md
 api_datasets/
 dbt/profiles.yml
-lambda/layer/python/site-packages/*
-lambda/zips/*
+lambdas/layer/python/site-packages/*
+lambdas/zips/*
 */__pycache__/
 glue/notebooks/.*
 glue/scripts/.*
