@@ -1,0 +1,106 @@
+name: Lambda CI (Selective Testing)
+
+on:
+  push:
+    branches:
+      - "lambdas/**"
+    paths:
+      - "lambdas/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  lambda-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history required for diff
+
+      # Setup Python from .python-version
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      # Install pytest
+      - name: Install test dependencies
+        run: |
+          pip install pytest
+
+      # Dynamically compute Python version
+      - name: Get Python major.minor version
+        id: pyver
+        run: |
+          PY_VER=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+          echo "py_version=$PY_VER" >> $GITHUB_OUTPUT
+
+      # Set all required PYTHONPATH(s)
+      - name: Setting all required PYTHONPATH(s)
+        run: |
+          echo "PYTHONPATH=${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/lambdas/layer/python:${GITHUB_WORKSPACE}/lambdas/layer/python/lib/python${{ steps.pyver.outputs.py_version }}/site-packages" >> $GITHUB_ENV
+
+      # Inject API key secret
+      - name: Set API Key
+        run: |
+          echo "ALPHAVANTAGE_API_KEY=${{ secrets.ALPHAVANTAGE_API_KEY }}" >> $GITHUB_ENV
+
+      # Detect changes
+      - name: Detect changed Lambda components
+        id: changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Detect layer change
+          if echo "$CHANGED_FILES" | grep -q "^lambdas/layer/"; then
+            echo "layer_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "layer_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Detect changed lambda functions
+          CHANGED_FUNCTIONS=$(echo "$CHANGED_FILES" \
+            | grep "^lambdas/functions/" \
+            | cut -d'/' -f3 \
+            | sort -u \
+            | tr '\n' ' ')
+
+          echo "changed_functions=$CHANGED_FUNCTIONS" >> $GITHUB_OUTPUT
+
+      # Run tests
+      - name: Run Lambda tests
+        run: |
+          if [ "${{ steps.changes.outputs.layer_changed }}" = "true" ]; then
+            echo "Layer changed → running ALL lambda tests"
+            pytest -v lambdas/functions
+          else
+            echo "Testing only changed lambda functions"
+            for fn in ${{ steps.changes.outputs.changed_functions }}; do
+              echo "Testing lambdas/functions/$fn"
+              pytest -v lambdas/functions/$fn
+            done
+          fi
+
+      # Create PR to main if tests pass
+      - name: Create Pull Request to main
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ github.ref_name }}
+          base: main
+          title: "Lambda CI passed: ${{ github.ref_name }}"
+          body: |
+            Lambda CI passed successfully.
+
+            Layer changed: ${{ steps.changes.outputs.layer_changed }}
+            Functions tested: ${{ steps.changes.outputs.changed_functions }}
+          labels: |
+            lambda
+            ci-passed
