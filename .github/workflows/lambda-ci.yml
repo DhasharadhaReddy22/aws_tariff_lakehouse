@@ -31,7 +31,7 @@ jobs:
       # Install pytest
       - name: Install test dependencies
         run: |
-          pip install pytest
+          pip install -r lambdas/layer/requirements.txt
 
       # Dynamically compute Python version
       - name: Get Python major.minor version
@@ -43,7 +43,7 @@ jobs:
       # Set all required PYTHONPATH(s)
       - name: Setting all required PYTHONPATH(s)
         run: |
-          echo "PYTHONPATH=${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/lambdas/layer/python:${GITHUB_WORKSPACE}/lambdas/layer/python/lib/python${{ steps.pyver.outputs.py_version }}/site-packages" >> $GITHUB_ENV
+          echo "PYTHONPATH=${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/lambdas/layer/python:${PYTHONPATH}" >> $GITHUB_ENV
 
       # Inject API key secret
       - name: Set API Key

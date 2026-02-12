@@ -205,7 +205,7 @@ class BucketClient:
             raise
 
 bucket_client = BucketClient(
-    bucket_name=config.get("AWS_S3_LAKEHOUSE_BUCKET"),
+    bucket_name=config.get("AWS_S3_LAKEHOUSE_BUCKET", "dummy-lakehouse"),
     region_name=config.get("AWS_REGION_NAME", default="us-east-1")
 )
 
