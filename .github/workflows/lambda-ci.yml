@@ -14,6 +14,13 @@ permissions:
 jobs:
   lambda-ci:
     runs-on: ubuntu-latest
+    env: 
+      ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }} 
+      TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }} 
+      AWS_S3_LAKEHOUSE_BUCKET: ${{ secrets.AWS_S3_LAKEHOUSE_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION_NAME: ${{ secrets.AWS_REGION_NAME }}
 
     steps:
       # Checkout repository
