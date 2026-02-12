@@ -66,10 +66,11 @@ jobs:
             echo "layer_changed=false" >> $GITHUB_OUTPUT
           fi
 
-          # Detect changed lambda functions
+          # Detect changed lambda functions by looking for files under lambdas/functions/<function_name>/ and extracting unique function names
           CHANGED_FUNCTIONS=$(echo "$CHANGED_FILES" \
             | grep "^lambdas/functions/" \
-            | cut -d'/' -f3 \
+            | awk -F/ 'NF >= 4 {print $3}' \
+            | grep "^lambda_" \
             | sort -u \
             | tr '\n' ' ')
 
@@ -82,6 +83,10 @@ jobs:
             echo "Layer changed → running ALL lambda tests"
             pytest -v lambdas/functions
           else
+            if [ -z "${{ steps.changes.outputs.changed_functions }}" ]; then
+              echo "No Lambda function changes detected. Skipping tests."
+              exit 0
+            fi
             echo "Testing only changed lambda functions"
             for fn in ${{ steps.changes.outputs.changed_functions }}; do
               echo "Testing lambdas/functions/$fn"
@@ -91,6 +96,7 @@ jobs:
 
       # Create PR to main if tests pass
       - name: Create Pull Request to main
+        if: success()
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ${{ github.ref_name }}
