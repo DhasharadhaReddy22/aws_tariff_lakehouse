@@ -18,8 +18,9 @@ This README documents the AWS Tariff Lakehouse Pipeline built with **Apache Airf
 10. [Apache Iceberg](#apache-iceberg)
 11. [Running the Project](#running-the-project)
 12. [Key Design Decisions](#key-design-decisions)
-13. [Future Enhancements](#future-enhancements)
-14. [Links](#links)
+13. [CI/CD Workflows](#cicd-workflows)
+14. [Future Enhancements](#future-enhancements)
+15. [Links](#links)
 
 ---
 
@@ -272,6 +273,11 @@ This makes S3 behave like a true analytical warehouse.
 - **Athena over Redshift** for cost efficiency and scale of project
 - **Airflow over Step Functions** for easy orchestration of multiple pipelines
 - **SCD2 at Gold and Silver layer** for analytical correctness
+
+---
+
+## CI/CD Workflows
+Refer to the document linked here [Workflows.md](./.github/Workflows.md).
 
 ---
 
