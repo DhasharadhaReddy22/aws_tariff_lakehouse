@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - lambdas/**
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -51,7 +49,7 @@ jobs:
       - name: Detect changed components
         id: changes
         run: |
-          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
 
           echo "$CHANGED_FILES"
 
@@ -138,6 +136,6 @@ jobs:
             
             aws lambda wait function-updated \
               --function-name $AWS_NAME
-
+              
             cd - > /dev/null
           done
