@@ -1,0 +1,10 @@
+{
+  "lambda_alphavantage": "tariff_alphavantage_lambda_function",
+  "lambda_financial_modeling_prep": "tariff_fmp_lambda_function",
+  "lambda_imf_datamapper": "tariff_imf_datamapper_lambda_function",
+  "lambda_indian_fuel_api": "tariff_indian_fuel_api_lambda_function",
+  "lambda_indian_stocks_api": "tariff_indian_stocks_api_lambda_function",
+  "lambda_metals_dev": "tariff_metals_dev_lambda_function",
+  "lambda_newsapi": "tariff_newsapi_lambda_function",
+  "lambda_twelve_data": "tariff_twelvedata_lambda_function"
+}

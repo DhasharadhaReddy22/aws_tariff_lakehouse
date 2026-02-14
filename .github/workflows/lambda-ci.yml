@@ -52,11 +52,6 @@ jobs:
         run: |
           echo "PYTHONPATH=${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/lambdas/layer/python:${PYTHONPATH}" >> $GITHUB_ENV
 
-      # Inject API key secret
-      - name: Set API Key
-        run: |
-          echo "ALPHAVANTAGE_API_KEY=${{ secrets.ALPHAVANTAGE_API_KEY }}" >> $GITHUB_ENV
-
       # Detect changes
       - name: Detect changed Lambda components
         id: changes

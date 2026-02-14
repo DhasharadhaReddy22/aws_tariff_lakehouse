@@ -1,0 +1,141 @@
+name: Lambda CD
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  lambda-cd:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_S3_LAKEHOUSE_BUCKET: ${{ secrets.AWS_S3_LAKEHOUSE_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION_NAME: ${{ secrets.AWS_REGION_NAME }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Install jq if function_map.json exists
+        run: |
+          if [ ! -f lambdas/functions/function_map.json ]; then
+            echo "function_map.json not found"
+            exit 1
+          fi
+
+          sudo apt-get install -y jq
+
+      - name: Configure AWS credentials (setting up AWS CLI role for GitHub Actions)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION_NAME }}
+
+      - name: Detect changed components
+        id: changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -q "^lambdas/layer/"; then
+            echo "layer_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "layer_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+          CHANGED_FUNCTIONS=$(echo "$CHANGED_FILES" \
+            | grep "^lambdas/functions/" \
+            | awk -F/ 'NF >= 4 {print $3}' \
+            | grep "^lambda_" \
+            | sort -u \
+            | tr '\n' ' ')
+
+          echo "changed_functions=$CHANGED_FUNCTIONS" >> $GITHUB_OUTPUT
+
+      - name: Build and Deploy and Update version Layer
+        if: steps.changes.outputs.layer_changed == 'true'
+        run: |
+          cd lambdas/layer
+          rm -rf python/lib/python*/site-packages/*
+          pip install -r requirements.txt -t python/lib/python3.12/site-packages
+
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          LAYER_ZIP_NAME=layer_${TIMESTAMP}.zip
+          
+          zip -r $LAYER_ZIP_NAME python
+
+          aws s3 cp $LAYER_ZIP_NAME \
+              s3://$AWS_S3_LAKEHOUSE_BUCKET/lambda-artifacts/layers/$LAYER_ZIP_NAME
+
+          NEW_LAYER_ARN=$(aws lambda publish-layer-version \
+            --layer-name tariff_lakehouse_ingestion \
+            --zip-file fileb://$LAYER_ZIP_NAME \
+            --query LayerVersionArn \
+            --output text)
+
+          echo "New Layer ARN: $NEW_LAYER_ARN"
+
+          cd - > /dev/null
+
+          # Auto-update all mapped functions with new layer ARN
+          for fn in $(jq -r 'keys[]' lambdas/functions/function_map.json); do
+            AWS_NAME=$(jq -r ".\"$fn\"" lambdas/functions/function_map.json)
+
+            echo "Updating layer version for $AWS_NAME"
+
+            aws lambda update-function-configuration \
+              --function-name $AWS_NAME \
+              --layers $NEW_LAYER_ARN
+
+            aws lambda wait function-updated \
+              --function-name $AWS_NAME
+          done
+
+      - name: Deploy Changed Lambda Functions
+        if: steps.changes.outputs.changed_functions != ''
+        run: |
+          for fn in ${{ steps.changes.outputs.changed_functions }}; do
+
+            AWS_NAME=$(jq -r ".\"$fn\"" lambdas/functions/function_map.json)
+
+            if [ "$AWS_NAME" = "null" ]; then
+              echo "No mapping found for $fn — skipping"
+              continue
+            fi
+
+            cd lambdas/functions/$fn
+
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            ZIP_NAME=${fn}_${TIMESTAMP}.zip
+
+            zip -r $ZIP_NAME .
+
+            aws s3 cp $ZIP_NAME \
+              s3://$AWS_S3_LAKEHOUSE_BUCKET/lambda-artifacts/functions/$ZIP_NAME
+
+            aws lambda update-function-code \
+              --function-name $AWS_NAME \
+              --s3-bucket $AWS_S3_LAKEHOUSE_BUCKET \
+              --s3-key lambda-artifacts/functions/$ZIP_NAME
+            
+            aws lambda wait function-updated \
+              --function-name $AWS_NAME
+              
+            cd - > /dev/null
+          done
