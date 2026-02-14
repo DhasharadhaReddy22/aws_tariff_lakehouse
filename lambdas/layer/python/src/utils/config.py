@@ -77,6 +77,7 @@ class Config:
         ssm_path = f"/tariff/{self.stage}/{name}"
         try:
             client = self._get_ssm_client()
+            logger.info(f"Attempting to load config '{env_key}' from SSM Parameter Store at path '{ssm_path}'")
             resp = client.get_parameter(Name=ssm_path, WithDecryption=False)
             logger.info(f"Loaded config '{env_key}' from SSM Parameter Store at '{ssm_path}'")
             return resp["Parameter"]["Value"]

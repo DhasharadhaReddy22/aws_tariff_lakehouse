@@ -33,14 +33,12 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             raise ValueError("Missing required field: dataset")
 
         if dataset == "TIME_SERIES_DAILY":
-            print("Running daily stock prices ingestion")
             result = run_daily_stock_prices_ingestion(
                 symbols=params.get("symbols"),
                 outputsize=params.get("outputsize", "compact"),
             )
 
         elif dataset == "COMMODITY":
-            print("Running commodity prices ingestion")
             result = run_commodity_prices_ingestion(
                 functions=params.get("functions"),
                 interval=params.get("interval", "daily"),
